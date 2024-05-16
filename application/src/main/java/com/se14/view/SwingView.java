@@ -1,3 +1,5 @@
+package com.se14.view;
+
 import javax.swing.*;
 
 public class SwingView extends JFrame {
