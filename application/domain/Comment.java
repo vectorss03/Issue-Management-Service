@@ -8,6 +8,11 @@ public class Comment {
     private Date timestamp;
     private User author;
 
+    @Override
+    public String toString()
+    {
+        return this.commentId + ":" +this.text;
+    }
     // Default constructor
     public Comment() {
     }
