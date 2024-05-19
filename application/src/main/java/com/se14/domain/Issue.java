@@ -1,4 +1,4 @@
-package application.src.main.java.com.se14.domain;
+package com.se14.domain;
 
 import java.util.Date;
 import java.util.List;

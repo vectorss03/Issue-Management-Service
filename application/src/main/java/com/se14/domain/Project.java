@@ -1,4 +1,4 @@
-package application.src.main.java.com.se14.domain;
+package com.se14.domain;
 
 import java.util.List;
 import java.util.Map;
