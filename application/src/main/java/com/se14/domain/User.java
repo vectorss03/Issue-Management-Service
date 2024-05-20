@@ -11,6 +11,11 @@ public class User {
     // Default constructor
     public User() {
     }
+    @Override
+    public String toString()
+    {
+        return this.username;
+    }
 
     // Parameterized constructor
     public User(String username, String password, String email, List<Project> projects) { //projects에 유저가 참여하고 있는 모든 project 만들어서 줘야합니다. 

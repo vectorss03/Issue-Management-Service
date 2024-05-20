@@ -8,6 +8,11 @@ public class UserSession {
     // Default constructor
     public UserSession() {
     }
+    @Override
+    public String toString()
+    {
+        return "User: "+this.currentUser+", Project: "+this.currentProject+", Issue: "+this.currentIssue;
+    }
 
     // Parameterized constructor
     public UserSession(User currentUser, Project currentProject, Issue currentIssue) {

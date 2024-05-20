@@ -5,10 +5,10 @@ import com.se14.domain.*;
 import java.util.List;
 
 public interface IssueService {
-    void report(Member reporter, Issue issue);
-    List<Issue> findByProject(Project project);
-    List<Issue> searchByFilter(String filter); // filter = "project:test status:new ..."
-    void assignDeveloper(Member assigner, Issue issue, Member assignee);
-    void updateStatus(Member updater, Issue issue, IssueStatus status);
-    void addComment(Member author, Issue issue, Comment comment);
+    void reportIssue(Project project, User reporter,String title, String description, IssuePriority priority);
+    List<Issue> searchIssues(Project project,SearchCriteria criteria);
+    //List<Issue> searchByFilter(String filter); // filter = "project:test status:new ..."
+    void assignIssue(User assigner, Issue issue, User assignee);
+    void updateIssueStatus(User updater, Issue issue, IssueStatus status);
+    void addComment(Project project, User commenter, Issue issue, String commentTitle, String commentText);
 }
