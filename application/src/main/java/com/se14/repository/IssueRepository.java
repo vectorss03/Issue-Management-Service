@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface IssueRepository {
-    Issue save(Issue issue);
+    Issue save(Issue issue,Project project);
     Optional<Issue> findById(long id);
     List<Issue> findByProject(Project project);
 }
