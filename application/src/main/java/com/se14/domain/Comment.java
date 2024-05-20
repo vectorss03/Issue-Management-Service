@@ -3,7 +3,7 @@ package com.se14.domain;
 import java.util.Date;
 
 public class Comment {
-    private String commentId;
+    private String commentTitle;
     private String text;
     private Date timestamp;
     private User author;
@@ -11,27 +11,27 @@ public class Comment {
     @Override
     public String toString()
     {
-        return this.commentId + ":" +this.text;
+        return this.commentTitle + ":" +this.text;
     }
     // Default constructor
     public Comment() {
     }
 
     // Parameterized constructor
-    public Comment(String commentId, String text, Date timestamp, User author) {
-        this.commentId = commentId;
+    public Comment(String commentTitle, String text, Date timestamp, User author) {
+        this.commentTitle = commentTitle;
         this.text = text;
         this.timestamp = timestamp;
         this.author = author;
     }
 
     // Getter and setter for commentId
-    public String getCommentId() {
-        return commentId;
+    public String getCommentTitle() {
+        return commentTitle;
     }
 
-    public void setCommentId(String commentId) {
-        this.commentId = commentId;
+    public void setCommentTitle(String commentTitle) {
+        this.commentTitle = commentTitle;
     }
 
     // Getter and setter for text

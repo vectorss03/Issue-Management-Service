@@ -5,6 +5,7 @@ import com.se14.service.*;
 import com.se14.repository.IssueRepository;
 import com.se14.repository.ProjectRepository;
 import com.se14.repository.UserRepository;
+import com.se14.repository.CommentRepository;
 
 import java.util.List;
 import java.util.Date;
@@ -12,12 +13,12 @@ import java.util.stream.Collectors;
 public class IssueServiceImplement implements IssueService{
     private IssueRepository issueRepository;
     private ProjectRepository projectRepository;
-    private UserRepository userRepository;
+    private CommentRepository commentRepository;
 
-    public IssueServiceImplement(IssueRepository issueRepository, ProjectRepository projectRepository, UserRepository userRepository) {
+    public IssueServiceImplement(IssueRepository issueRepository, ProjectRepository projectRepository, CommentRepository commentRepository) {
         this.issueRepository = issueRepository;
         this.projectRepository = projectRepository;
-        this.userRepository = userRepository;
+        this.commentRepository = commentRepository;
     }
     @Override
     public void reportIssue(Project project, User reporter, String title, String description, IssuePriority priority) {
@@ -65,14 +66,20 @@ public class IssueServiceImplement implements IssueService{
         }
 
     }
-
     @Override
-    public void updateIssueStatus(Project progject,User updater, Issue issue, IssueStatus status) {
-
+    public void updateIssueStatus(Project project,User updater, Issue issue, IssueStatus status) {
+        issue.setStatus(status);
+        if (status == IssueStatus.FIXED) {
+            issue.setFixer(updater);
+        }
+        issueRepository.save(issue,project);
     }
 
     @Override
     public void addComment(Project project, User commenter, Issue issue, String commentTitle, String commentText) {
-
+        Comment newComment = new Comment(commentTitle,commentText,new Date(),commenter);
+        issue.getComments().add(newComment);
+        issueRepository.save(issue,project);
+        commentRepository.save(newComment,issue);
     }
 }
