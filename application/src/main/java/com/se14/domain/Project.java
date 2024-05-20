@@ -11,7 +11,14 @@ public class Project {
 
     // Default constructor
     public Project() {
+
     }
+    @Override
+    public String toString()
+    {
+        return this.projectId;
+    }
+
 
     // Parameterized constructor
     public Project(String projectId, String projectName, Map<User, List<UserRole>> members, List<Issue> issues) {

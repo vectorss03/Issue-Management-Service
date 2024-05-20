@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CommentRepository {
-    Comment save(Comment comment);
+    Comment save(Comment comment,Issue issue);
     Optional<Comment> findById(long id);
     List<Comment> findByIssue(Issue issue);
 }

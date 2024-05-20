@@ -15,6 +15,6 @@ public class ApplicationExampleTests {
     @Test
     @DisplayName("Hello Worlds Test")
     public void helloWorlds() {
-        assertThat(applicationExample.helloWorld()).isEqualTo("Hello Worlds!");
+        assertThat(applicationExample.helloWorld()).isEqualTo("Hello World!");
     }
 }

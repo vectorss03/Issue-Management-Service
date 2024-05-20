@@ -1,11 +1,16 @@
 package com.se14.service;
 
-import com.se14.domain.Project;
-import com.se14.domain.Member;
-import com.se14.domain.User;
+import com.se14.domain.*;
+
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
 
 public interface ProjectService {
-    Project create(String name, String description);
-    void addMember(Project project, Member member);
+    List<Project> listProject();
+    Project createProject(User creator,String name, String description);
+    void addMemberToProject(Project project,User user, UserRole role);
+    Map<Calendar,List<Issue>> getStatistic(Project project);
+    List<User> listUser(Project project, UserRole role);
     boolean hasUser(User user);
 }

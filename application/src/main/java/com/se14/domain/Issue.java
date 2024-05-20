@@ -14,7 +14,14 @@ public class Issue {
     private User assignee;
     private List<Comment> comments;
 
+    @Override
+    public String toString() {
+        return this.title;
+    }
+
     public static void main(String[] args) {
+        //Issue i = new Issue();
+        //i.setTitle("grfe");
         System.out.println(new Date());
     }
     // Default constructor
