@@ -22,10 +22,6 @@ const routes = [
         redirect: { name: 'issues' },
         children: [
             {
-                path: '/',
-                redirect: { name: 'home' }
-            },
-            {
                 path: 'home',
                 name: 'home',
                 component: ProjectHome
