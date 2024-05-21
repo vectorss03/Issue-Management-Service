@@ -1,4 +1,4 @@
-<template>
+  <template>
   <body class="min-h-screen">
 
   <section>
@@ -77,7 +77,7 @@
 
 
           <button id="assigneeDropdownButton" data-dropdown-toggle="assigneeDropdown"
-                  class="mx-2.5 text-black focus:outline-none font-medium rounded text-sm px-2 py-2.5 text-center inline-flex items-center" :class="filter.assignee ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
+                  class="mx-2.5 text-black focus:outline-none font-medium rounded text-sm px-2 py-2.5 text-center inline-flex items-center" :class="filter.assignee || filter.assignee == null ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
                   type="button" data-dropdown-offset-skidding="68">
             Assignee
             <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
