@@ -3,6 +3,7 @@ package com.se14.domain;
 import java.util.List;
 
 public class User {
+    private Integer userId;
     private String username;
     private String password;
     private String email;
@@ -18,7 +19,8 @@ public class User {
     }
 
     // Parameterized constructor
-    public User(String username, String password, String email, List<Project> projects) { //projects에 유저가 참여하고 있는 모든 project 만들어서 줘야합니다. 
+    public User(Integer userId,String username, String password, String email, List<Project> projects) { //projects에 유저가 참여하고 있는 모든 project 만들어서 줘야합니다.
+        this.userId =userId;
         this.username = username;
         this.password = password;
         this.email = email;
@@ -55,5 +57,13 @@ public class User {
 
     public void setProjects(List<Project> projects) {
         this.projects = projects;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Integer userId) {
+        this.userId = userId;
     }
 }

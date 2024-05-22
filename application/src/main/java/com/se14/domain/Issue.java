@@ -1,5 +1,6 @@
 package com.se14.domain;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class Issue {
     }
     // Default constructor
     public Issue() {
+       this.comments = new ArrayList<Comment>();
     }
     public Issue( User reporter, String title, String description, IssuePriority priority) { // 수정해도 좋을 것 같아요. report Issue 위해서 만들었습니다.
         this.reporter = reporter;
