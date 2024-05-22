@@ -12,5 +12,5 @@ public interface ProjectService {
     void addMemberToProject(Project project,User user, UserRole role);
     Map<Calendar,List<Issue>> getStatistic(Project project);
     List<User> listUser(Project project, UserRole role);
-    boolean hasUser(User user);
+    boolean hasUser(Project project,User user);
 }
