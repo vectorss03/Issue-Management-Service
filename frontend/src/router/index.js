@@ -5,6 +5,7 @@ import ProjectHome from "@/views/Board/ProjectHome.vue";
 import ProjectIssueList from "@/views/Board/ProjectIssueList.vue";
 import ProjectAnalysis from "@/views/Board/ProjectAnalysis.vue";
 import ProjectUserList from "@/views/Board/ProjectUserList.vue";
+import IssueDeatil from "@/views/Board/Issue/IssueDeatil.vue";
 
 const routes = [
     {
@@ -32,6 +33,11 @@ const routes = [
                 component: ProjectIssueList
             },
             {
+                path: 'issues/:issue_id',
+                name: 'issue-detail',
+                component: IssueDeatil
+            },
+            {
                 path: 'analysis',
                 name: 'analysis',
                 component: ProjectAnalysis
@@ -43,6 +49,7 @@ const routes = [
             }
         ]
     },
+
 ]
 
 const router = createRouter({
