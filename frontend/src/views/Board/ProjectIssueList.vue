@@ -310,11 +310,11 @@
               <div class="grid gap-4 mb-4 grid-cols-2">
                 <div class="col-span-2">
                   <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Title</label>
-                  <input type="text" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="Type project name" required="">
+                  <input type="text" v-model="issueForm.title" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="Type issue name" required="">
                 </div>
                 <div class="col-span-2">
                   <label for="description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Description</label>
-                  <textarea id="description" rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 resize-none" placeholder="Write project description here"></textarea>
+                  <textarea id="description" v-model="issueForm.description" rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 resize-none" placeholder="Write issue description here"></textarea>
                 </div>
                 <div class="col-span-2 sm:col-span-1">
                   <label for="status" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Status</label>
@@ -322,7 +322,7 @@
                 </div>
                 <div class="col-span-2 sm:col-span-1">
                   <label for="category" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Priority</label>
-                  <select id="category" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
+                  <select id="category" v-model="issueForm.priority" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
                     <option selected="">Select priority</option>
                     <option value="blocker">Blocker</option>
                     <option value="critical">Critical</option>
@@ -332,7 +332,7 @@
                   </select>
                 </div>
               </div>
-              <button type="button" class="text-white inline-flex items-center bg-blue-600 hover:bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center" data-modal-hide="create-project-modal">
+              <button type="button" @click="createIssue()" class="text-white inline-flex items-center bg-blue-600 hover:bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center" data-modal-hide="report-issue-modal">
                 Save
               </button>
             </form>
@@ -381,8 +381,9 @@
 </template>
 
 <script setup>
-import {computed, onMounted, ref, watch} from 'vue'
+import {computed, inject, onMounted, ref, watch} from 'vue'
 import {initFlowbite} from 'flowbite'
+import {useRoute} from "vue-router";
 
 const filter = ref({
   "keyword": "",
@@ -421,30 +422,7 @@ const user_list = [
   },
 ]
 
-const issue_list = [
-  {
-    "issue_id": 1,
-    "title": "First Issue",
-    "description": "Hello world!",
-    "status": "new",
-    "priority": "major",
-    "assignee": null,
-    "fixer": null,
-    "reporter": "hysk",
-    "reported_date": "2024-05-22 01:42:26"
-  },
-  {
-    "issue_id": 2,
-    "title": "Second Issue",
-    "description": "Issue for test",
-    "status": "closed",
-    "priority": "critical",
-    "assignee": "hysk",
-    "fixer": "hysk",
-    "reporter": "hysk",
-    "reported_date": "2024-05-21 01:42:26"
-  }
-]
+const issue_list = ref(null)
 
 watch(filter.value, () => searchIssues())
 
@@ -503,8 +481,37 @@ function resetFilter() {
   }
 }
 
+const issueForm = {
+  "title": "",
+  "description": "",
+  "priority": ""
+}
+
+const axios = inject('axios')
+const route = useRoute()
+
+function getIssues() {
+  axios.get('/api/projects/' + route.params.project_id + '/issues')
+      .then(response => {
+        console.log(response.data)
+        issue_list.value = response.data
+      })
+}
+
+function createIssue() {
+  axios.post('/api/projects/' + route.params.project_id + '/issues', {
+    "title": issueForm.title,
+    "description": issueForm.description,
+    "priority": issueForm.priority
+  }).then((response) => {
+    console.log(response.data)
+    getIssues()
+  })
+}
+
 // initialize components based on data attribute selectors
 onMounted(() => {
   initFlowbite();
+  getIssues()
 })
 </script>

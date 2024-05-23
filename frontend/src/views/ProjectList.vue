@@ -49,14 +49,14 @@
               <div class="grid gap-4 mb-4 grid-cols-2">
                 <div class="col-span-2">
                   <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Title</label>
-                  <input type="text" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="Type project name" required="">
+                  <input type="text" v-model="projectForm.title" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5" placeholder="Type project name" required="">
                 </div>
                 <div class="col-span-2">
                   <label for="description" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Description</label>
-                  <textarea id="description" rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 resize-none" placeholder="Write project description here"></textarea>
+                  <textarea id="description" v-model="projectForm.description" rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 resize-none" placeholder="Write project description here"></textarea>
                 </div>
               </div>
-              <button type="button" class="text-white inline-flex items-center bg-blue-600 hover:bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center" data-modal-hide="create-project-modal">
+              <button type="button" @click="createProject()" class="text-white inline-flex items-center bg-blue-600 hover:bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center" data-modal-hide="create-project-modal">
                 Save
               </button>
             </form>
@@ -85,7 +85,7 @@
           <router-link :to="{ name: 'project', params: { project_id: row.project_id } }">{{row.title}}</router-link>
         </th>
         <td class="px-4 py-3 w-2/4">{{row.description}}</td>
-        <td class="px-4 py-3 w-1/8">{{row.issues}}</td>
+        <td class="px-4 py-3 w-1/8">0</td>
         <td class="px-4 py-3 w-1/8">
           <span class="sr-only">Actions</span>
         </td>
@@ -98,38 +98,45 @@
 </template>
 
 <script setup>
-import {onMounted, ref} from "vue";
+import {inject, onMounted, ref} from "vue";
 import {initFlowbite} from 'flowbite'
 
-const project_list = [
-  {
-    "project_id" : 1,
-    "title" : "Issue Tracker",
-    "description" : "my first project",
-    "issues" : 5,
-  },
-  {
-    "project_id" : 2,
-    "title" : "SE14 Team Project",
-    "description" : "my second project",
-    "issues" : 10,
-  },
-  {
-    "project_id" : 3,
-    "title" : "First Team Project",
-    "description" : "my third project",
-    "issues" : 2,
-  }
-];
+const project_list = ref()
+const projectForm = {
+  "title": "",
+  "description": "",
+}
 
 const searched_project_list = ref(project_list)
 function searchProjects(event) {
   const keyword = event.target.value
 
-  searched_project_list.value = project_list.filter(project => project.title.toLowerCase().includes(keyword.toLowerCase()))
+  searched_project_list.value = project_list.value.filter(project => project.title.toLowerCase().includes(keyword.toLowerCase()))
+}
+
+const axios = inject('axios')  // inject axios
+
+function getProjects() {
+  axios.get('/api/projects')
+      .then(response => {
+        console.log(response.data)
+        project_list.value = response.data
+      })
+}
+
+function createProject() {
+  axios.post('/api/projects', {
+    "title": projectForm.title,
+    "description": projectForm.description,
+  }).then((response) => {
+    console.log(response.data)
+    getProjects()
+  })
 }
 
 onMounted(() => {
+  console.log("mounted")
+  getProjects()
   initFlowbite();
 })
 
