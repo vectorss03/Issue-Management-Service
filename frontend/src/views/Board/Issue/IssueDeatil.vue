@@ -18,7 +18,7 @@
           <h1 class="font-bold text-3xl m-3 mb-10">{{ issue.title }}</h1>
           <h1 class="font-bold text-m m-3">Description</h1>
           <div v-text="issue.description" style="white-space: pre-line; word-break: break-word"
-               class="text-sm font-normal text-gray-700 mx-3 mb-10"/>
+               class="text-sm font-normal text-gray-700 mx-3 mb-10 min-h-40"/>
         </div>
 
 
@@ -70,12 +70,11 @@
 
           <ol class="mx-16 items-center my-3">
             <li class="mb-1">
-              <span
-                  class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full">{{issue.status}}</span>
+              <StatusBadge :status="issue.status.toUpperCase()" />
               <button class="mx-2.5 text-blue-700 text-xs py-2 px-4 hover:underline">Change State</button>
             </li>
             <li class="mb-3">
-              <span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full">{{issue.priority}}</span>
+              <PriorityBadge :priority="issue.priority.toUpperCase()" />
             </li>
             <li class="mb-1">
               <span class="px-1.5 text-xs font-medium">{{ issue.assignee ? issue.assignee : "Unassigned" }}</span>
@@ -102,6 +101,8 @@
 <script setup>
 import {inject, onMounted, ref} from "vue";
 import {useRoute} from "vue-router";
+import StatusBadge from "@/components/StatusBadge.vue";
+import PriorityBadge from "@/components/PriorityBadge.vue";
 
 const issue = ref({
   "issue_id": 1,
