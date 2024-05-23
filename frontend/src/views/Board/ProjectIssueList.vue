@@ -456,6 +456,11 @@ const prioritySelected = computed(() => {
 })
 let searchTimeout = null
 
+onMounted(() => {
+  initFlowbite();
+  getIssues()
+})
+
 watch(filter.value, () => searchIssues())
 
 function resetFilter() {
@@ -493,6 +498,11 @@ function search() {
     }
   }).then(response => {
     console.log(response)
+  }).catch(error => {
+    console.log(error)
+    if (error.message.indexOf('Network Error') > -1) {
+      alert('Network Error\nPlease Try again later')
+    }
   })
 }
 
@@ -502,7 +512,12 @@ function getIssues() {
       .then(response => {
         console.log(response.data)
         issueList.value = response.data
-      })
+      }).catch(error => {
+    console.log(error)
+    if (error.message.indexOf('Network Error') > -1) {
+      alert('Network Error\nPlease Try again later')
+    }
+  })
 }
 
 function reportIssue() {
@@ -513,13 +528,11 @@ function reportIssue() {
   }).then((response) => {
     console.log(response.data)
     getIssues()
+  }).catch(error => {
+    console.log(error)
+    if (error.message.indexOf('Network Error') > -1) {
+      alert('Network Error\nPlease Try again later')
+    }
   })
 }
-
-
-// initialize components based on data attribute selectors
-onMounted(() => {
-  initFlowbite();
-  getIssues()
-})
 </script>
