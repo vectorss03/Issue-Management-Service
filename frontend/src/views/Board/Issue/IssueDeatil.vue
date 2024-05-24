@@ -111,7 +111,7 @@
               <div class="col-span-2">
                 <h3 class="font-bold text-m ps-0.5">Recommended</h3>
                 <ul class="max-h-48 overflow-y-auto py-3 px-0.5 text-sm text-gray-700 " aria-labelledby="dropdownRadioButton">
-                  <li v-for="(user, index) in recommendedUserList.slice(0, 3)" :key="index">
+                  <li v-for="(user, index) in searchedUserList.slice(0, 3)" :key="index">
                     <div class="flex items-center p-1 py-2 rounded hover:bg-gray-100">
                       <input :id="`assignee-${user.username}`" type="radio" :value="user.username" name="default-radio" v-model="assignDeveloperForm.developer"
                              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300">
@@ -131,12 +131,12 @@
                             d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
                     </svg>
                   </div>
-                  <input type="text" id="input-group-search"
+                  <input type="text" id="input-group-search" @input="searchUsers($event)"
                          class="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded bg-gray-50 focus:border-blue-500"
                          placeholder="Search user">
                 </div>
                 <ul class="max-h-48 overflow-y-auto py-3 px-0.5 text-sm text-gray-700 " aria-labelledby="dropdownRadioButton">
-                  <li v-for="(user, index) in recommendedUserList" :key="index">
+                  <li v-for="(user, index) in searchedUserList" :key="index">
                     <div class="flex items-center p-1 py-2 rounded hover:bg-gray-100">
                       <input :id="`assignee-${user.username}`" type="radio" :value="user.username" name="default-radio" v-model="assignDeveloperForm.developer"
                              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300">
@@ -231,6 +231,7 @@ import {useRoute} from "vue-router";
 import StatusBadge from "@/components/StatusBadge.vue";
 import PriorityBadge from "@/components/PriorityBadge.vue";
 import {initFlowbite} from "flowbite";
+import store from "@/vuex/store";
 
 const axios = inject('axios')
 const route = useRoute()
@@ -258,33 +259,12 @@ const changeStateFrom = {
   "newState": ""
 }
 
-const recommendedUserList = [
+const userList = ref([
   {
-    "username": "hysk",
-  },
-  {
-    "username": "khw",
-  },
-  {
-    "username": "kss",
-  },
-  {
-    "username": "kss",
-  },
-  {
-    "username": "kss",
-  },
-  {
-    "username": "kss",
-  },
-  {
-    "username": "kss",
-  },
-  {
-    "username": "kss",
-  },
-
-]
+    "username": ''
+  }
+])
+const searchedUserList = ref([])
 
 onMounted(() => {
   initFlowbite();
@@ -295,7 +275,16 @@ onMounted(() => {
   // }
 
   getIssue()
+  getUsers()
 })
+
+function searchUsers(event) {
+  const keyword = event.target.value
+
+  searchedUserList.value = userList.value
+      .filter(user => user.username !== store.state.username)
+      .filter(user => user.username.toLowerCase().includes(keyword.toLowerCase()))
+}
 
 function getIssue() {
   console.log("getIssue")
@@ -304,6 +293,20 @@ function getIssue() {
         console.log(response.data)
         issue.value = response.data
         changeStateFrom.newState = issue.value.status
+      }).catch(error => {
+    console.log(error)
+    if (error.message.indexOf('Network Error') > -1) {
+      alert('Network Error\nPlease Try again later')
+    }
+  })
+}
+
+function getUsers() {
+  axios.get('/api/projects/' + route.params.project_id + '/users')
+      .then(response => {
+        console.log(response.data)
+        userList.value = response.data
+        searchedUserList.value = userList.value.filter(user => user.username !== store.state.username)
       }).catch(error => {
     console.log(error)
     if (error.message.indexOf('Network Error') > -1) {

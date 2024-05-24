@@ -29,6 +29,7 @@
 import store from "@/vuex/store";
 import {computed} from "vue";
 import axios from "axios";
+import router from "@/router";
 
 const isLoggedIn = computed(() => {
   return store.getters.isLoggedIn
@@ -46,6 +47,7 @@ function logout() {
     // loginForm.password = ""
     store.commit("setUsername", '')
     alert("logout")
+    router.go(0)
   }).catch(error => {
     console.log(error)
     alert("logout failed")

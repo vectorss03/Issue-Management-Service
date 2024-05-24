@@ -410,26 +410,19 @@ import {useRoute} from "vue-router";
 import StatusBadge from "@/components/StatusBadge.vue";
 import PriorityBadge from "@/components/PriorityBadge.vue";
 import qs from "qs";
+import store from "@/vuex/store";
 
 const axios = inject('axios')
 const route = useRoute()
 
-const myName = "hysk"
-const userList = [
+const myName = computed(() => store.state.username)
+const userList = ref([
   {
-    "username": "hysk",
-  },
-  {
-    "username": "khw",
-  },
-  {
-    "username": "kss",
-  },
-  {
-    "username": "knn",
-  },
-]
-const searchedUserList = ref(userList.filter(user => user.username !== myName))
+    "username": '',
+  }
+])
+
+const searchedUserList = ref([])
 
 const issueList = ref([])
 const issueForm = {
@@ -458,6 +451,7 @@ let searchTimeout = null
 onMounted(() => {
   initFlowbite();
   getIssues()
+  getUsers()
 })
 
 watch(filter.value, () => searchIssues())
@@ -476,8 +470,8 @@ function resetFilter() {
 function searchUsers(event) {
   const keyword = event.target.value
 
-  searchedUserList.value = userList
-      .filter(user => user.username !== myName)
+  searchedUserList.value = userList.value
+      .filter(user => user.username !== store.state.username)
       .filter(user => user.username.toLowerCase().includes(keyword.toLowerCase()))
 }
 
@@ -498,7 +492,7 @@ function search() {
   }).then(response => {
     console.log(response)
   }).catch(error => {
-    console.log(error)
+    // console.log(error)
     if (error.message.indexOf('Network Error') > -1) {
       alert('Network Error\nPlease Try again later')
     }
@@ -511,6 +505,20 @@ function getIssues() {
       .then(response => {
         console.log(response.data)
         issueList.value = response.data
+      }).catch(error => {
+    console.log(error)
+    if (error.message.indexOf('Network Error') > -1) {
+      alert('Network Error\nPlease Try again later')
+    }
+  })
+}
+
+function getUsers() {
+  axios.get('/api/projects/' + route.params.project_id + '/users')
+      .then(response => {
+        console.log(response.data)
+        userList.value = response.data
+        searchedUserList.value = userList.value.filter(user => user.username !== store.state.username)
       }).catch(error => {
     console.log(error)
     if (error.message.indexOf('Network Error') > -1) {

@@ -7,9 +7,13 @@ import datetime
 app = Flask(__name__)
 app.secret_key = "34234923011480"
 
+def get_user(username):
+    return list(filter(lambda user: user["username"] == username, users))[0]
+
+
 @app.route('/api/projects')
 def project_list():
-    return projects
+    return list(filter(lambda project: project["project_id"] in get_user(session["username"])["projects"], projects))
 
 @app.route('/api/projects', methods=['POST'])
 def create_project():
@@ -69,7 +73,8 @@ def create_account():
         "user_id": users[-1]["user_id"] + 1,
         "username": params["username"],
         "password": params["password"],
-        "email": params["email"]
+        "email": params["email"],
+        "projects": []
         })
     print(users)
     return Response(status=HTTPStatus.OK)
@@ -106,6 +111,22 @@ def change_state(project_id, issue_id):
     params = request.get_json()
     list(filter(lambda issue: issue["issue_id"] == issue_id, list(filter(lambda project: project["project_id"] == project_id, projects))[0]["issues"]))[0]["status"] = params["status"]
     return Response(status=HTTPStatus.OK)
+
+@app.route('/api/projects/<int:project_id>/users')
+def user_list(project_id):
+    return list(filter(lambda user: project_id in user["projects"], users))
+
+@app.route('/api/projects/<int:project_id>/users/join')
+def user_join_list(project_id):
+    return list(filter(lambda user: project_id not in user["projects"], users))
+
+@app.route('/api/projects/<int:project_id>/users', methods=['POST'])
+def add_user(project_id):
+    params = request.get_json()
+    user = get_user(params["username"])
+    user["projects"].append(project_id)
+    return Response(status=HTTPStatus.OK)
+    
 
 
 if __name__ == '__main__':
