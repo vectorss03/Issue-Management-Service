@@ -152,6 +152,8 @@ function createProject() {
     "title": projectForm.title,
     "description": projectForm.description,
   }).then(() => {
+    projectForm.title = ""
+    projectForm.description = ""
     getProjects()
   })
   .catch(error => {

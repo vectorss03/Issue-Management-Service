@@ -340,7 +340,6 @@
                          class="block mb-2 text-sm font-medium text-gray-900">Priority</label>
                   <select id="priority" v-model="issueForm.priority"
                           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:border-blue-500 block w-full p-2.5">
-                    <option value="">Select priority</option>
                     <option value="blocker">Blocker</option>
                     <option value="critical">Critical</option>
                     <option value="major">Major</option>
@@ -436,7 +435,7 @@ const issueList = ref([])
 const issueForm = {
   "title": "",
   "description": "",
-  "priority": ""
+  "priority": "major"
 }
 
 const filter = ref({
@@ -527,6 +526,9 @@ function reportIssue() {
     "priority": issueForm.priority
   }).then((response) => {
     console.log(response.data)
+    issueForm.title = ""
+    issueForm.description = ""
+    issueForm.priority = "major"
     getIssues()
   }).catch(error => {
     console.log(error)
