@@ -148,7 +148,7 @@
 
               </div>
             </div>
-            <button type="submit" data-popover-target="popover-default" data-popover-placement="right"
+            <button type="submit" data-popover-target="popover-assign" data-popover-placement="right"
                     class="text-white inline-flex items-center bg-blue-600 hover:bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                     data-modal-hide="assign-developer-modal">
               Assign
@@ -158,9 +158,9 @@
       </div>
     </div>
 
-    <div data-popover id="popover-default" role="tooltip" class="absolute z-50 invisible inline-block w-64 text-sm text-gray-500 transition-opacity duration-300 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-800">
-      <div class="px-3 py-2 bg-gray-100 border-b border-gray-200 rounded-t-lg dark:border-gray-600 dark:bg-gray-700">
-        <h3 class="font-semibold text-gray-900 dark:text-white">Status Change</h3>
+    <div data-popover id="popover-assign" role="tooltip" class="absolute z-50 invisible inline-block w-64 text-sm text-gray-500 transition-opacity duration-300 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0">
+      <div class="px-3 py-2 bg-gray-100 border-b border-gray-200 rounded-t-lg">
+        <h3 class="font-semibold text-gray-900">Status Change</h3>
       </div>
       <div class="px-3 py-2">
         <span>Status of this issue will be changed into 'Assigned'</span>
@@ -193,14 +193,14 @@
                 <select id="status"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:border-blue-500 block p-2.5 w-2/5"
                         disabled>
-                  <option selected>{{changeStateFrom.newState}}</option>
+                  <option selected>{{changeStateForm.newState}}</option>
                 </select>
 
                 <svg class="w-1/5 h-6 text-gray-800 my-2.5 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 12H5m14 0-4 4m4-4-4-4"/>
                 </svg>
 
-                <select id="priority" v-model="changeStateFrom.newState"
+                <select id="priority" v-model="changeStateForm.newState"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:border-blue-500 block p-2.5 w-2/5">
                   <option value="new">New</option>
                   <option value="assigned">Assigned</option>
@@ -231,7 +231,6 @@ import {useRoute} from "vue-router";
 import StatusBadge from "@/components/StatusBadge.vue";
 import PriorityBadge from "@/components/PriorityBadge.vue";
 import {initFlowbite} from "flowbite";
-import store from "@/vuex/store";
 
 const axios = inject('axios')
 const route = useRoute()
@@ -255,7 +254,7 @@ const assignDeveloperForm = {
   "developer": ""
 }
 
-const changeStateFrom = {
+const changeStateForm = {
   "newState": ""
 }
 
@@ -282,7 +281,6 @@ function searchUsers(event) {
   const keyword = event.target.value
 
   searchedUserList.value = userList.value
-      .filter(user => user.username !== store.state.username)
       .filter(user => user.username.toLowerCase().includes(keyword.toLowerCase()))
 }
 
@@ -292,7 +290,7 @@ function getIssue() {
       .then(response => {
         console.log(response.data)
         issue.value = response.data
-        changeStateFrom.newState = issue.value.status
+        changeStateForm.newState = issue.value.status
       }).catch(error => {
     console.log(error)
     if (error.message.indexOf('Network Error') > -1) {
@@ -306,7 +304,7 @@ function getUsers() {
       .then(response => {
         console.log(response.data)
         userList.value = response.data
-        searchedUserList.value = userList.value.filter(user => user.username !== store.state.username)
+        searchedUserList.value = userList.value
       }).catch(error => {
     console.log(error)
     if (error.message.indexOf('Network Error') > -1) {
@@ -346,7 +344,7 @@ function assignDeveloper() {
 
 function changeState() {
   axios.put('/api/projects/' + route.params.project_id + '/issues/' + route.params.issue_id + '/status', {
-    "status": changeStateFrom.newState
+    "status": changeStateForm.newState
   }).then(response => {
     console.log(response.data)
     getIssue()

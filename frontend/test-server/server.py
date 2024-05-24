@@ -110,6 +110,8 @@ def assign_developer(project_id, issue_id):
 def change_state(project_id, issue_id):
     params = request.get_json()
     list(filter(lambda issue: issue["issue_id"] == issue_id, list(filter(lambda project: project["project_id"] == project_id, projects))[0]["issues"]))[0]["status"] = params["status"]
+    if params["status"] == "fixed":
+        list(filter(lambda issue: issue["issue_id"] == issue_id, list(filter(lambda project: project["project_id"] == project_id, projects))[0]["issues"]))[0]["fixer"] = session["username"]
     return Response(status=HTTPStatus.OK)
 
 @app.route('/api/projects/<int:project_id>/users')
