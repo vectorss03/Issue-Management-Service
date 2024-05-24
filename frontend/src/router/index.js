@@ -6,11 +6,21 @@ import ProjectIssueList from "@/views/Board/ProjectIssueList.vue";
 import ProjectAnalysis from "@/views/Board/ProjectAnalysis.vue";
 import ProjectUserList from "@/views/Board/ProjectUserList.vue";
 import IssueDeatil from "@/views/Board/Issue/IssueDeatil.vue";
+import LogIn from "@/views/LogIn.vue";
+import CreateAccount from "@/views/CreateAccount.vue";
 
 const routes = [
     {
         path: '/',
         redirect: '/projects'
+    },
+    {
+        path: '/login',
+        component: LogIn
+    },
+    {
+        path: '/account',
+        component: CreateAccount
     },
     {
         path: '/projects',
@@ -55,6 +65,14 @@ const routes = [
 const router = createRouter({
     history: createWebHistory(process.env.BASE_URL),
     routes: routes
+})
+
+router.beforeEach((to, from, next) => {
+    if(to.path !== '/login' && to.path !== '/account'){
+        sessionStorage.setItem("FROM_URL", to.path);
+    }
+
+    next();
 })
 
 export default router

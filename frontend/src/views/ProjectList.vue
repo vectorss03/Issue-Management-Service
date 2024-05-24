@@ -151,7 +151,8 @@ function createProject() {
   axios.post('/api/projects', {
     "title": projectForm.title,
     "description": projectForm.description,
-  }).then(() => {
+  }).then((response) => {
+    console.log(response)
     projectForm.title = ""
     projectForm.description = ""
     getProjects()
