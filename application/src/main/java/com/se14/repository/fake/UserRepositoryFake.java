@@ -37,4 +37,9 @@ public class UserRepositoryFake implements UserRepository {
                 .findFirst()
                 .orElse(null);
     }
+
+    @Override
+    public List<User> findAll() {
+        return (List<User>) users.values();
+    }
 }
