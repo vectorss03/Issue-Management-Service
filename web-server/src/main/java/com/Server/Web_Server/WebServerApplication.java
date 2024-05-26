@@ -7,7 +7,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class WebServerApplication {
 
 	public static void main(String[] args) {
+
 		SpringApplication.run(WebServerApplication.class, args);
+		System.out.println("SERVER STARTED!!!");
+
 	}
 
+
 }
+
+//진입점
