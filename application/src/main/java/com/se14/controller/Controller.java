@@ -15,6 +15,7 @@ import com.se14.view.*;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Controller {
@@ -75,10 +76,10 @@ public class Controller {
         User currentUser = sessionService.getCurrentSession().getCurrentUser();
         if (currentUser != null) {
             mainView.setLoggedIn(true);
-            displayUserProjects(currentUser);
         } else {
             mainView.setLoggedIn(false);
         }
+        displayUserProjects(currentUser);
         mainView.setVisible(true);
     }
 
@@ -117,7 +118,13 @@ public class Controller {
 
     private void displayUserProjects(User user) {
         List<Project> projects = projectService.listProject();
-        mainView.setProjects(projects, new ActionListener() {
+        List<Project> accessibleProjects = new ArrayList<>();
+        for (Project project : projects) {
+            if (projectService.hasUser(project, user)) {
+                accessibleProjects.add(project);
+            }
+        }
+        mainView.setProjects(accessibleProjects, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String projectId = e.getActionCommand();

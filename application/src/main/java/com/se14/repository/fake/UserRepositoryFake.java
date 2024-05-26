@@ -21,6 +21,10 @@ public class UserRepositoryFake implements UserRepository {
 
     @Override
     public User save(User user) {
+        if(user.getUserId()==null) {
+            long newId = users.keySet().stream().mapToLong(Long::longValue).max().orElse(0) + 1;
+            user.setUserId((int) newId);
+        }
         users.put(user.getUserId().longValue(), user);
         return user;
     }
