@@ -137,4 +137,8 @@ public class ProjectServiceImplement implements ProjectService {
         // Check if the user is in the project's members map
         return members.containsKey(user);
     }
+    @Override
+    public Project findProjectById(long id) {
+        return projectRepository.findById(id).orElse(null);
+    }
 }

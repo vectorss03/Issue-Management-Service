@@ -1,10 +1,14 @@
 package com.se14.controller;
 
-import com.se14.domain.Project;
-import com.se14.domain.User;
-import com.se14.service.ProjectService;
-import com.se14.service.UserService;
-import com.se14.service.SessionService;
+import com.se14.domain.*;
+import com.se14.repository.CommentRepository;
+import com.se14.repository.IssueRepository;
+import com.se14.repository.ProjectRepository;
+import com.se14.repository.UserRepository;
+import com.se14.repository.fake.CommentRepositoryFake;
+import com.se14.repository.fake.IssueRepositoryFake;
+import com.se14.service.*;
+import com.se14.service.implement1.IssueServiceImplement;
 import com.se14.service.implement1.ProjectServiceImplement;
 import com.se14.service.implement1.SessionServiceImplement;
 import com.se14.service.implement1.UserServiceImplement;
@@ -23,17 +27,21 @@ public class Controller {
     private UserService userService;
     private ProjectService projectService;
     private SessionService sessionService;
+    private IssueService issueService;
     private MainView mainView;
     private LoginView loginView;
     private SignInView signInView;
 
     private Controller() {
         // Initialize the services and repositories
-        UserRepositoryFake userRepository = new UserRepositoryFake();
+        UserRepository userRepository = new UserRepositoryFake();
         userService = new UserServiceImplement(userRepository);
-        ProjectRepositoryFake projectRepository = new ProjectRepositoryFake(userRepository);
+        ProjectRepository projectRepository = new ProjectRepositoryFake(userRepository);
+        CommentRepository commentRepository =new CommentRepositoryFake();
+        IssueRepository issueRepository = new IssueRepositoryFake(projectRepository,commentRepository);
         projectService = new ProjectServiceImplement(projectRepository, userRepository);
         sessionService = new SessionServiceImplement();
+        issueService = new IssueServiceImplement(issueRepository,projectRepository,commentRepository);
 
         // Initialize views
         mainView = new MainView();
@@ -61,6 +69,32 @@ public class Controller {
                 logout();
             }
         });
+        mainView.addHomeButtonListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sessionService.setCurrentProject(null);
+                sessionService.setCurrentIssue(null);
+                mainView.showView("Projects");
+            }
+        });
+        mainView.addCreateProjectButtonListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                createNewProject();
+            }
+        });
+        mainView.getIssuePanel().addFilterButtonListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                filterIssues();
+            }
+        });
+        mainView.getIssuePanel().addResetButtonListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                resetIssues();
+            }
+        });
 
         mainView.setVisible(true);
     }
@@ -75,9 +109,9 @@ public class Controller {
     public void showMainView() {
         User currentUser = sessionService.getCurrentSession().getCurrentUser();
         if (currentUser != null) {
-            mainView.setLoggedIn(true);
+            mainView.setLoggedIn(true,currentUser.getUsername());
         } else {
-            mainView.setLoggedIn(false);
+            mainView.setLoggedIn(false,"");
         }
         displayUserProjects(currentUser);
         mainView.setVisible(true);
@@ -113,6 +147,7 @@ public class Controller {
 
     public void logout() {
         sessionService.setCurrentUser(null);
+        mainView.showView("Projects");
         showMainView();
     }
 
@@ -128,10 +163,71 @@ public class Controller {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String projectId = e.getActionCommand();
+                Project currentProject = projectService.findProjectById(Long.parseLong(projectId));
+                sessionService.setCurrentProject(currentProject);
+                displayProjectIssues(currentProject);
                 // Handle project click to show ProjectMainView (implementation needed)
-                System.out.println("Project ID clicked: " + projectId);
+                //System.out.println("Project ID clicked: " + projectId);
             }
         });
+    }
+
+    private void filterIssues() {
+        Project currentProject = sessionService.getCurrentSession().getCurrentProject();
+        if (currentProject == null) {
+            return;
+        }
+
+        IssueStatus selectedStatus = mainView.getIssuePanel().getSelectedStatus();
+        IssuePriority selectedPriority = mainView.getIssuePanel().getSelectedPriority();
+        String selectedAssignee = mainView.getIssuePanel().getSelectedAssignee();
+        String selectedFixer = mainView.getIssuePanel().getSelectedFixer();
+
+        SearchCriteria criteria = new SearchCriteria();
+        criteria.setStatus(selectedStatus);
+        criteria.setPriority(selectedPriority);
+        criteria.setAssignee(null);
+        criteria.setFixer(null);
+        if (selectedAssignee != null) {
+            User assignee = userService.findByUsername(selectedAssignee);
+            criteria.setAssignee(assignee);
+        }
+        if (selectedFixer != null) {
+            User fixer = userService.findByUsername(selectedFixer);
+            criteria.setFixer(fixer);
+        }
+
+        List<Issue> filteredIssues = issueService.searchIssues(currentProject, criteria);
+        mainView.getIssuePanel().setIssues(filteredIssues);
+    }
+
+    private void resetIssues() {
+        Project currentProject = sessionService.getCurrentSession().getCurrentProject();
+        if (currentProject != null) {
+            displayProjectIssues(currentProject);
+        }
+    }
+    private void createNewProject() {
+        String projectName = JOptionPane.showInputDialog(mainView, "Enter project name:");
+        String projectDescription = JOptionPane.showInputDialog(mainView, "Enter project description:");
+
+        if (projectName != null && projectDescription != null && !projectName.trim().isEmpty() && !projectDescription.trim().isEmpty()) {
+            User currentUser = sessionService.getCurrentSession().getCurrentUser();
+            if (currentUser != null) {
+                Project newProject = projectService.createProject(currentUser, projectName, projectDescription);
+                if (newProject != null) {
+                    showMainView();  // Refresh the main view to show the new project
+                } else {
+                    JOptionPane.showMessageDialog(mainView, "Failed to create project.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(mainView, "You must be logged in to create a project.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    private void displayProjectIssues(Project project) {
+        List<Issue> issues = issueService.searchIssues(sessionService.getCurrentSession().getCurrentProject(),null);
+        mainView.setIssues(issues);
     }
 
     public static void main(String[] args) {

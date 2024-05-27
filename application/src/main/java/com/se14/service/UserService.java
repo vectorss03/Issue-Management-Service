@@ -9,4 +9,5 @@ public interface UserService {
     User authenticateUser(String username, String password);
     void addNewUser(String username, String password, String email);
     List<User> listAllUser();
+    User findByUsername(String username);
 }
