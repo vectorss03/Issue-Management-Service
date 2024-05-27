@@ -95,6 +95,12 @@ public class Controller {
                 resetIssues();
             }
         });
+        mainView.getIssuePanel().setIssueDetailListener(new IssuePanel.IssueDetailListener() {
+            @Override
+            public void onIssueTitleClicked(String issueTitle) {
+                showIssueDetail(issueTitle);
+            }
+        });
 
         mainView.setVisible(true);
     }
@@ -205,6 +211,22 @@ public class Controller {
         Project currentProject = sessionService.getCurrentSession().getCurrentProject();
         if (currentProject != null) {
             displayProjectIssues(currentProject);
+        }
+    }
+    private void showIssueDetail(String issueTitle) {
+        Project currentProject = sessionService.getCurrentSession().getCurrentProject();
+        if (currentProject == null) {
+            return;
+        }
+
+        List<Issue> issues = issueService.searchIssues(currentProject, null);
+        for (Issue issue : issues) {
+            if (issue.getTitle().equals(issueTitle)) {
+                sessionService.setCurrentIssue(issue);
+                mainView.getIssueDetailPanel().setIssue(issue);
+                mainView.showView("IssueDetail");
+                break;
+            }
         }
     }
     private void createNewProject() {

@@ -18,6 +18,15 @@ public class IssuePanel extends JPanel {
     private JComboBox<String> fixerFilter;
     private JButton filterButton;
     private JButton resetButton;
+    private IssueDetailListener issueDetailListener;
+
+    public interface IssueDetailListener {
+        void onIssueTitleClicked(String issueTitle);
+    }
+
+    public void setIssueDetailListener(IssueDetailListener listener) {
+        this.issueDetailListener = listener;
+    }
 
     public IssuePanel() {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -67,10 +76,9 @@ public class IssuePanel extends JPanel {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 int row = issueTable.rowAtPoint(evt.getPoint());
                 int col = issueTable.columnAtPoint(evt.getPoint());
-                if (col == 0) {
+                if (col == 0 && issueDetailListener != null) {
                     String issueTitle = (String) issueTable.getValueAt(row, col);
-                    // Handle issue title click
-                    issueTitleClicked(issueTitle);
+                    issueDetailListener.onIssueTitleClicked(issueTitle);
                 }
             }
         });
@@ -110,11 +118,6 @@ public class IssuePanel extends JPanel {
 
     public void addResetButtonListener(ActionListener listener) {
         resetButton.addActionListener(listener);
-    }
-
-    private void issueTitleClicked(String issueTitle) {
-        // Implement the action to be performed when an issue title is clicked
-        System.out.println("Issue title clicked: " + issueTitle);
     }
 
     public IssueStatus getSelectedStatus() {

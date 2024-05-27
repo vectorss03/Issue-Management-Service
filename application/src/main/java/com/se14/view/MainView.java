@@ -17,6 +17,8 @@ public class MainView extends JFrame {
     private JPanel cardPanel;  // 패널을 담을 CardLayout 패널
     private CardLayout cardLayout;  // CardLayout 관리자
     private ProjectPanel projectPanel;  // 프로젝트 목록을 보여주는 패널
+    private IssueDetailPanel issueDetailPanel;  // 이슈 상세정보를 보여주는 패널
+
     private JButton homeButton;
     private IssuePanel issuePanel;
 
@@ -51,9 +53,14 @@ public class MainView extends JFrame {
 
         projectPanel = new ProjectPanel();
         issuePanel = new IssuePanel();
+        issueDetailPanel = new IssueDetailPanel();
+
 
         cardPanel.add(projectPanel, "Projects");
         cardPanel.add(issuePanel, "Issues");
+        cardPanel.add(issueDetailPanel, "IssueDetail");
+
+
 
         add(topPanel, BorderLayout.NORTH);
         add(cardPanel, BorderLayout.CENTER);
@@ -106,7 +113,9 @@ public class MainView extends JFrame {
     public IssuePanel getIssuePanel() {
         return issuePanel;
     }
-
+    public IssueDetailPanel getIssueDetailPanel() {
+        return issueDetailPanel;
+    }
     // 새로운 패널을 CardLayout에 추가하기 위한 메서드
     public void addView(JPanel panel, String name) {
         cardPanel.add(panel, name);
