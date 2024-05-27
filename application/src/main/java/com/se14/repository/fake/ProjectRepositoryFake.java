@@ -4,15 +4,16 @@ import com.se14.domain.Project;
 import com.se14.domain.User;
 import com.se14.domain.UserRole;
 import com.se14.repository.ProjectRepository;
+import com.se14.repository.UserRepository;
 
 import java.util.*;
 
 public class ProjectRepositoryFake implements ProjectRepository {
 
     private final Map<Long, Project> projects = new HashMap<>();
-    public UserRepositoryFake userRepositoryFake;
+    public UserRepository userRepositoryFake;
 
-    public ProjectRepositoryFake(UserRepositoryFake userRepositoryFake) {
+    public ProjectRepositoryFake(UserRepository userRepositoryFake) {
         // Create 3 projects with IDs 1, 2, and 3
         for (long i = 1; i <= 3; i++) {
             Project project = new Project();
@@ -48,6 +49,10 @@ public class ProjectRepositoryFake implements ProjectRepository {
 
     @Override
     public Project save(Project project) {
+        if (project.getProjectId() == null) {
+            long newId = projects.keySet().stream().mapToLong(Long::longValue).max().orElse(0) + 1;
+            project.setProjectId((int) newId);
+        }
         projects.put(project.getProjectId().longValue(), project);
         return project;
     }

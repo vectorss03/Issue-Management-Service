@@ -3,7 +3,9 @@ package com.se14.repository.fake;
 import com.se14.domain.*;
 import com.se14.domain.IssueStatus;
 import com.se14.domain.IssuePriority;
+import com.se14.repository.CommentRepository;
 import com.se14.repository.IssueRepository;
+import com.se14.repository.ProjectRepository;
 
 import java.util.*;
 
@@ -11,10 +13,10 @@ public class IssueRepositoryFake implements IssueRepository {
 
     private final Map<Long, Issue> issues = new HashMap<>();
     private long currentId = 1;
-    public ProjectRepositoryFake projectRepositoryFake;
-    public CommentRepositoryFake commentRepositoryFake;
+    public ProjectRepository projectRepositoryFake;
+    public CommentRepository commentRepositoryFake;
 
-    public IssueRepositoryFake(ProjectRepositoryFake projectRepositoryFake,CommentRepositoryFake commentRepositoryFake) {
+    public IssueRepositoryFake(ProjectRepository projectRepositoryFake,CommentRepository commentRepositoryFake) {
         this.projectRepositoryFake = projectRepositoryFake;
         this.commentRepositoryFake =commentRepositoryFake;
         Project project1 = projectRepositoryFake.findById(1).orElse(null);

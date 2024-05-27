@@ -4,6 +4,8 @@ import com.se14.domain.User;
 import com.se14.repository.UserRepository;
 import com.se14.service.UserService;
 
+import java.util.List;
+
 public class UserServiceImplement implements UserService {
 
     private final UserRepository userRepository;
@@ -34,5 +36,14 @@ public class UserServiceImplement implements UserService {
         newUser.setUsername(username);
         newUser.setEmail(email);
         userRepository.save(newUser);
+    }
+
+    @Override
+    public List<User> listAllUser() {
+        return userRepository.findAll();
+    }
+    @Override
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 }

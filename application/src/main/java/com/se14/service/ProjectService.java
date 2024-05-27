@@ -13,4 +13,5 @@ public interface ProjectService {
     Map<Calendar,List<Issue>> getStatistic(Project project);
     List<User> listUser(Project project, UserRole role);
     boolean hasUser(Project project,User user);
+    Project findProjectById(long id);
 }
