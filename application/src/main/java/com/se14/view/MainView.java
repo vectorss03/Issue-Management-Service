@@ -13,7 +13,7 @@ public class MainView extends JFrame {
 
     public MainView() {
         setTitle("Project Main Page");
-        setSize(600, 400);
+        setSize(1200, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
