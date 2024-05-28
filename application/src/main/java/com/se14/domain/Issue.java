@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+
 public class Issue {
 
     private String title;
@@ -15,6 +16,8 @@ public class Issue {
     private User fixer;
     private User assignee;
     private List<Comment> comments;
+    private long id;
+
 
     @Override
     public String toString() {
@@ -38,6 +41,7 @@ public class Issue {
         this.status = IssueStatus.NEW;
         this.reportedDate = new Date();
         this.comments = null;
+
     }
 
     // Parameterized constructor
@@ -51,7 +55,9 @@ public class Issue {
         this.fixer = fixer;
         this.assignee = assignee;
         this.comments = comments;
+
     }
+
 
     // Getter and setter for title
     public String getTitle() {
@@ -133,4 +139,10 @@ public class Issue {
     public void setComments(List<Comment> comments) {
         this.comments = comments;
     }
+
+    //setter and getter for issue id for DB management
+    public void setIssueId(long id) { this.id = id;
+    }
+
+    public long getIssueId() { return id; }
 }

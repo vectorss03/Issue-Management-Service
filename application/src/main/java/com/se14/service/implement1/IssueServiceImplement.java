@@ -50,8 +50,8 @@ public class IssueServiceImplement implements IssueService{
                 .filter(issue -> (criteria.getStartDate() == null || !issue.getReportedDate().before(criteria.getStartDate()))
                         && (criteria.getEndDate() == null || !issue.getReportedDate().after(criteria.getEndDate())))
                 .filter(issue -> criteria.getReporter() == null || issue.getReporter().equals(criteria.getReporter()))
-                .filter(issue -> criteria.getFixer() == null || issue.getFixer().equals(criteria.getFixer()))
-                .filter(issue -> criteria.getAssignee() == null || issue.getAssignee().equals(criteria.getAssignee()))
+                .filter(issue -> criteria.getFixer() == null || (issue.getFixer() != null && issue.getFixer().equals(criteria.getFixer())))
+                .filter(issue -> criteria.getAssignee() == null || (issue.getAssignee() != null && issue.getAssignee().equals(criteria.getAssignee())))
                 .collect(Collectors.toList());
     }
 

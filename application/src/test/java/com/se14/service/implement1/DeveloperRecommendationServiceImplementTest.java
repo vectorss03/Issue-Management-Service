@@ -83,4 +83,53 @@ public class DeveloperRecommendationServiceImplementTest {
         assertThat(recommendedDevelopers.size()).isEqualTo(3);
         System.out.println("Recommended Developers: " + recommendedDevelopers);
     }
+    @Test
+    @DisplayName("Recommend a single developer when only one has fixed all issues in a smaller project")
+    void testRecommendSingleDeveloperForSmallProject() {
+        // Set up a smaller project with only 2 issues, both fixed by the same developer
+        Project smallProject = new Project();
+        smallProject.setProjectId(2);
+        smallProject.setProjectTitle("Small Project");
+        smallProject.setProjectDescription("A small project with limited issues");
+
+        //List<User> smallProjectUsers = new ArrayList<>();
+        Map<User, List<UserRole>> smallMemberRoles = new HashMap<>();
+        List<Issue> smallProjectIssues = new ArrayList<>();
+
+        // Create one developer and assign them as DEVELOPER
+        User singleDeveloper = new User();
+        singleDeveloper.setUserId(10);
+        singleDeveloper.setUsername("Solo_Developer");
+        //smallProjectUsers.add(singleDeveloper);
+        smallMemberRoles.put(singleDeveloper, Collections.singletonList(UserRole.DEVELOPER));
+
+        smallProject.setMembers(smallMemberRoles);
+
+        // Add two issues fixed by the same developer
+        Issue issue1 = new Issue(singleDeveloper, "Minor UI Bug", "Minor alignment issue on the dashboard", IssuePriority.MINOR);
+        issue1.setFixer(singleDeveloper);
+        smallProjectIssues.add(issue1);
+
+        Issue issue2 = new Issue(singleDeveloper, "Login Page Error", "Error on login page under specific conditions", IssuePriority.MINOR);
+        issue2.setFixer(singleDeveloper);
+        smallProjectIssues.add(issue2);
+
+        smallProject.setIssues(smallProjectIssues);
+
+        // Simulate the scenario for a new issue
+        Issue newIssue = new Issue();
+        newIssue.setTitle("New Minor Feature Request");
+        newIssue.setDescription("Request to add a new button to UI");
+        newIssue.setStatus(IssueStatus.NEW);
+        newIssue.setReportedDate(new Date());
+
+        // Use the recommendation service to get recommendations
+        List<User> recommendedDevelopers = developerRecommendationService.recommendDeveloper(smallProject, newIssue);
+
+        // Assert that only one developer is recommended and it's the correct one
+        assertThat(recommendedDevelopers).hasSize(1);
+        assertThat(recommendedDevelopers.get(0).getUserId()).isEqualTo(singleDeveloper.getUserId());
+        System.out.println("Recommended Developer for small project: " + recommendedDevelopers.get(0).getUsername());
+    }
+
 }
