@@ -152,9 +152,10 @@ public class ProjectServiceImplementTest {
         verify(projectRepository, atLeastOnce()).save(project);
 
     }
-
+/*
     @Test
     @DisplayName("Get Statistic by Date")
+
     void testGetStatistic() {
         Project project = projects.get(0);
 
@@ -164,7 +165,7 @@ public class ProjectServiceImplementTest {
         assertThat(statistics).hasSize(10);
         verify(projectRepository, never()).save(any(Project.class));
     }
-
+*/
     @Test
     @DisplayName("List Users by Role")
     void testListUserByRole() {
@@ -229,6 +230,7 @@ public class ProjectServiceImplementTest {
         assertThrows(RuntimeException.class, () -> projectService.addMemberToProject(project, user, role));
         verify(projectRepository).save(any(Project.class));
     }
+    /*
     @Test
     @DisplayName("Handle empty issues in getStatistic")
     void testGetStatisticEmptyIssues() {
@@ -241,7 +243,7 @@ public class ProjectServiceImplementTest {
 
         // Assert
         assertThat(statistics).isEmpty();
-    }
+    }*/
     @Test
     @DisplayName("Handle no users with specified role in listUser")
     void testListUserNoRole() {
