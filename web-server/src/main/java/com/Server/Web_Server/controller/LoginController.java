@@ -1,35 +1,39 @@
-package com.Server.Web_Server.controller;
+package com.se14.controller;
 
-import org.springframework.stereotype.Controller;
+import com.se14.domain.User;
+import com.se14.service.UserService;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 public class LoginController {
+    private final UserService userService;
 
-    private List<User> users = new ArrayList<>();
-    //Repository에서 받아오기
+    @Autowired
+    public LoginController(UserService userService) {
+        this.userService = userService;
+    }
 
     @GetMapping("/login")
-    public ResponseEntity<Void> login(@RequestParam Map<String, String> params, HttpSession session) {
+    public ResponseEntity<Void> login(@RequestParam Map<String, String> params, HttpServletRequest request) {
         String username = params.get("username");
         String password = params.get("password");
 
-        boolean userExists = users.stream().anyMatch(user -> user.getUsername().equals(username) && user.getPassword().equals(password));
+        User user  = userService.authenticateUser(username, password);
 
-        if (userExists) {
+        if (user != null) {
+            HttpSession session = request.getSession();
             session.setAttribute("username", username);
             return new ResponseEntity<>(HttpStatus.OK);
         }
@@ -45,15 +49,7 @@ public class LoginController {
 
     @GetMapping("/account")
     public ResponseEntity<Void> createAccount(@RequestParam Map<String, String> params) {
-        int newId = users.isEmpty() ? 1 : users.get(users.size() - 1).getUserId() + 1;
-        User newUser = new User();
-        newUser.setUserId(newId);
-        newUser.setUsername(params.get("username"));
-        newUser.setPassword(params.get("password"));
-        newUser.setEmail(params.get("email"));
-        newUser.setProjects(new ArrayList<>());
-
-        users.add(newUser);
+        userService.addNewUser(params.get("username"), params.get("password"), params.get("email"));
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }
