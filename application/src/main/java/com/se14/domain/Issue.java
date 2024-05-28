@@ -6,6 +6,7 @@ import java.util.List;
 
 
 public class Issue {
+
     private String title;
     private String description;
     private IssueStatus status;
