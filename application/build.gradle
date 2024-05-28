@@ -27,6 +27,13 @@ dependencies {
     //implementation("com.google.cloud:gapic-google-cloud-ai-generativelanguage-v1-java:0.0.0-SNAPSHOT")
     //implementation("io.grpc:grpc-okhttp:1.53.0")
 
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-mustache'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    runtimeOnly 'com.h2database:h2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
 
 }
 
