@@ -144,7 +144,8 @@ public class ProjectController {
         }
 
         issueService.assignIssue(currentProject, detailedIssue, assignee);
-        //확인 필요함
+
+        //Service 쪽에서 assigner 삭제 필요
         //void assignIssue(Project project, User assigner, Issue issue, User assignee);
 
         return new ResponseEntity<>(HttpStatus.OK);
@@ -172,10 +173,11 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}/users")
-    public List<User> userList(@PathVariable int projectId) {
+    public List<User> userList(@PathVariable int projectId @RequestBody Map<String, String> params) {
         Project currentProject = projectService.findProjectById(projectId);
+        UserRole role = (UserRole)params.get("userRole");
 
-        List<User> usersInProject = projectService.listUser(currentProject, ?);
+        List<User> usersInProject = projectService.listUser(currentProject, role);
         //프론트 엔드 쪽 수정 필요함
 
         return usersInProject;
@@ -183,7 +185,7 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}/users/join")
-    public List<User> userJoinList(@PathVariable int projectId) {
+    public List<User> userJoinList(@PathVariable int projectId ) {
         Project currentProject = projectService.findProjectById(projectId);
 
         List<user> all_users = userService.listAllUser();
@@ -212,7 +214,7 @@ public class ProjectController {
         }
         User user = userService.findByUsername(params.get("username"));
         UserRole role = (UserRole)params.get("role");
-
+        
         //void addMemberToProject(Project project,User user, UserRole role);
         projectService.addMemberToProject(currentProject, user, role);
         //Vue쪽에서 role 처리 해야 함
