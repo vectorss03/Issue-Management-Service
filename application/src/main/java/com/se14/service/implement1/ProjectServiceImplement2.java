@@ -144,4 +144,16 @@ public class ProjectServiceImplement2 implements ProjectService {
     public Project findProjectById(long id) {
         return projectRepository.findById(id).orElse(null);
     }
+    @Override
+    public List<Project> findProjectByUser(User user) {
+        List<Project> allProjects = projectRepository.findAll();
+        List<Project> userProjects = new ArrayList<>();
+
+        for (Project project : allProjects) {
+            if (project.getMembers().containsKey(user)) {
+                userProjects.add(project);
+            }
+        }
+        return userProjects;
+    }
 }

@@ -15,4 +15,5 @@ public interface ProjectService {
     List<User> listUser(Project project, UserRole role);
     boolean hasUser(Project project,User user);
     Project findProjectById(long id);
+    List<Project> findProjectByUser(User user);  // 현석님 요청. 새로운 메서드 추가
 }
