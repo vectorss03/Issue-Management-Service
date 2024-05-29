@@ -29,7 +29,7 @@ public class ProjectServiceImplementTest2 {
     private UserRepository userRepository;
 
     @InjectMocks
-    private ProjectServiceImplement2 projectService;
+    private ProjectServiceImplement projectService;
 
     private List<Project> projects;
     private List<User> users;
