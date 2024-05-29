@@ -1,4 +1,4 @@
-package test.java.com.se14.service.implement1;
+package com.se14.service.implement1;
 
 import com.se14.domain.User;
 import com.se14.repository.UserRepository;
