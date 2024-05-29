@@ -16,20 +16,49 @@ public class UserDB implements UserRepository {
         this.connection = connection;
     }
 
+
     @Override
     public User save(User user) {
-        String sql = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
-        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            statement.setString(1, user.getUsername());
-            statement.setString(2, user.getPassword());
-            statement.setString(3, user.getEmail());
-            statement.executeUpdate();
+        // username 이미 있는지 확인
+        User existingUser_ = findByUsername(user.getUsername());
+        if (existingUser_ != null) {
+            //username이 이미 있으면 exception.
+            throw new IllegalArgumentException("Username already exists");
+        }
+        if (user.getUserId() == 0) {
+            user.setUserId(generateUniqueUserId());
+        }
 
-            ResultSet generatedKeys = statement.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                user.setUserId(generatedKeys.getInt(1));
+        Optional<User> existingUser = findById(user.getUserId());
+        if (existingUser.isPresent()) {
+            return update(user);
+        } else {
+            //새로운 유저 DB에 insert.
+            String sql = "INSERT INTO users (user_id, username, password, email) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                statement.setLong(1, user.getUserId());
+                statement.setString(2, user.getUsername());
+                statement.setString(3, user.getPassword());
+                statement.setString(4, user.getEmail());
+                statement.executeUpdate();
+
                 return user;
+            } catch (SQLException ex) {
+                ex.printStackTrace();
             }
+            return null;
+        }
+    }
+
+
+    private User update(User user) {
+        String sql = "UPDATE users SET password = ?, email = ? WHERE username = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, user.getPassword());
+            statement.setString(2, user.getEmail());
+            statement.setString(3, user.getUsername());
+            statement.executeUpdate();
+            return user;
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
@@ -80,11 +109,22 @@ public class UserDB implements UserRepository {
         }
         return users;
     }
+    private int generateUniqueUserId() {
+        String sql = "SELECT MAX(user_id) AS max_id FROM users";
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+            if (resultSet.next()) {
+                return resultSet.getInt("max_id") + 1;
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return 1;
+    }
 
-    // Helper method to map ResultSet to User object
     private User mapResultSetToUser(ResultSet resultSet) throws SQLException {
         return new User(
-                resultSet.getInt("user_id"),
+                (int) resultSet.getLong("user_id"),
                 resultSet.getString("username"),
                 resultSet.getString("password"),
                 resultSet.getString("email")
