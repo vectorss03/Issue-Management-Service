@@ -36,11 +36,14 @@ public class ProjectController {
     }
 
     @GetMapping
-    public List<ProjectDTO> projectList(HttpSession session) {
+    public ResponseEntity<List<ProjectDTO>> projectList(HttpSession session) {
         User user = (User) session.getAttribute("USER");
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
         List<Project> projects = projectService.findProjectByUser(user);
 
-        return projects.stream().map(ProjectDTO::new).toList();
+        return new ResponseEntity<>(projects.stream().map(ProjectDTO::new).toList(), HttpStatus.OK);
 
     }
     //ProjectService쪽 수정되었을 때 추가 작업 필요 => ProjectService에 findProjectByUser()추가됨, 그에 따라 수정 했음
@@ -87,7 +90,6 @@ public class ProjectController {
 
         return project.getMembers().get(user);
     }
-
 //
 
 //

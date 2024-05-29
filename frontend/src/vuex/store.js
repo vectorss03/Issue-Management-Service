@@ -8,7 +8,7 @@ const store = createStore({
     },
 
     getters: {
-        isLoggedIn: state => {
+        isAuthenticated: state => {
             return state.username !== ''
         },
         hasRole: state => role => {
@@ -26,6 +26,10 @@ const store = createStore({
         addRole: (state, role) => {
             state.roles.push(role)
         },
+        logout: (state) => {
+            state.username = ''
+            state.roles = []
+        }
     },
 
     plugins: [

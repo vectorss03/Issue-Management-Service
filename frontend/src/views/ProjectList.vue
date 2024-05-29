@@ -24,7 +24,8 @@
 
       <div class="w-full md:w-auto flex flex-col md:flex-row space-y-2 md:space-y-0 items-stretch md:items-center justify-end md:space-x-3 flex-shrink-0">
         <button data-modal-target="create-project-modal" data-modal-toggle="create-project-modal"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-lg">
+                class="text-white font-bold py-2 px-4 rounded shadow-lg" v-bind:disabled="!isAuthenticated" v-bind:title="isAuthenticated ? false : 'You need to login to create project'"
+                :class="isAuthenticated ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-500 hover:bg-gray-600'">
           Create Project
         </button>
       </div>
@@ -75,8 +76,11 @@
       </div>
     </div>
 
+    <div v-if="!isAuthenticated">
+      <h1 class="text-center mt-40">You need to log in to access the projects</h1>
+    </div>
 
-    <table class="w-full text-sm text-left">
+    <table class="w-full text-sm text-left" v-if="isAuthenticated">
       <thead class="text-sm border-b-2">
       <tr>
         <th scope="col" class="px-4 py-3 w-1/4">Title</th>
@@ -108,7 +112,7 @@
 </template>
 
 <script setup>
-import {inject, onMounted, ref} from "vue";
+import {computed, inject, onMounted, ref} from "vue";
 import {initFlowbite} from 'flowbite'
 import store from "@/vuex/store";
 
@@ -122,6 +126,9 @@ const projectForm = {
   "description": "",
 }
 
+const isAuthenticated = computed(() => {
+  return store.getters.isAuthenticated
+});
 
 onMounted(() => {
   initFlowbite();
@@ -136,6 +143,8 @@ function searchProjects(event) {
 }
 
 function getProjects() {
+  if (!store.getters.isAuthenticated) return
+
   axios.get('/api/projects')
       .then(response => {
         projectList = response.data
@@ -146,6 +155,8 @@ function getProjects() {
         console.log(error)
         if (error.message.indexOf('Network Error') > -1) {
           alert('Network Error\nPlease Try again later')
+        } else {
+          store.commit("logout")
         }
       })
 }

@@ -360,31 +360,25 @@
 
     </div>
 
-    <table class="w-full text-sm text-left">
+    <table class="w-full text-sm text-left table-fixed">
       <thead class="text-sm border-b-2">
       <tr>
-        <th scope="col" class="px-4 py-3 w-2/12">Title</th>
+        <th scope="col" class="px-4 py-3 w-2/12 min-w-72">Title</th>
         <th scope="col" class="px-4 py-3 w-4/12">Description</th>
         <th scope="col" class="px-4 py-3 w-1/12">Status</th>
         <th scope="col" class="px-4 py-3 w-1/12">Priority</th>
         <th scope="col" class="px-4 py-3 w-1/12">Assignee</th>
         <th scope="col" class="px-4 py-3 w-1/12">Fixer</th>
         <th scope="col" class="px-4 py-3 w-1/12">Reporter</th>
-        <th scope="col" class="px-4 py-3 w-1/12">ReportedDate</th>
+        <th scope="col" class="px-4 py-3 w-1/12">Reported Date</th>
       </tr>
       </thead>
       <tbody>
       <tr v-for="issue in issueList" :key="issue.issue_id" class="border-b-2 hover:bg-gray-100">
-        <th scope="row" class="px-4 py-3 font-medium text-blue-700 hover:underline whitespace-nowrap w-2/12 max-w-0">
-          <router-link :to="{ name: 'issue-detail', params: { issue_id: issue.issue_id } }">{{
-              issue.title
-            }}
-          </router-link>
+        <th scope="row" class="px-4 py-3 font-medium text-blue-700 hover:underline whitespace-nowrap w-2/12 min-w-72 truncate">
+          <router-link :to="{ name: 'issue-detail', params: { issue_id: issue.issue_id } }">{{issue.title }}</router-link>
         </th>
-        <td class="px-4 py-3 w-4/12">{{ issue.description }}</td>
-        <!--        <td class="px-4 py-3 w-1/12">-->
-        <!--          <span class="px-5 py-1 bg-green-300 rounded-full text-green-800 font-bold dfle">{{issue.status}}</span>-->
-        <!--        </td>-->
+        <td class="px-4 py-3 w-4/12 truncate">{{ issue.description }}</td>
         <td class="px-4 py-3 w-1/12">
           <StatusBadge :status="issue.status.toUpperCase()"/>
         </td>
@@ -395,7 +389,7 @@
         <td class="px-4 py-3 w-1/12">{{ issue.assignee }}</td>
         <td class="px-4 py-3 w-1/12">{{ issue.fixer }}</td>
         <td class="px-4 py-3 w-1/12">{{ issue.reporter }}</td>
-        <td class="px-4 py-3 w-1/12">{{ issue.reported_date }}</td>
+        <td class="px-4 py-3 w-1/12 truncate">{{ issue.reported_date }}</td>
       </tr>
       </tbody>
     </table>
