@@ -17,10 +17,13 @@ public class DBInitializer {
             Connection connection = DatabaseConnection.getConnection();
 
             // Initialize repository implementations with the connection
-            UserDB userDB = new UserDB(connection);
-            ProjectDB projectDB = new ProjectDB(connection);
-            IssueDB issueDB = new IssueDB(connection);
+
             CommentDB commentDB = new CommentDB(connection);
+            UserDB userDB = new UserDB(connection);
+            IssueDB issueDB = new IssueDB(connection,commentDB);
+            ProjectDB projectDB = new ProjectDB(connection,userDB,commentDB);
+
+
 
             // Return the initialized database objects
             return new DatabaseObjects(userDB, projectDB, issueDB, commentDB);
