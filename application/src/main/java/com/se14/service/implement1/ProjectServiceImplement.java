@@ -1,9 +1,7 @@
 package com.se14.service.implement1;
 
-import com.se14.domain.Issue;
-import com.se14.domain.Project;
-import com.se14.domain.User;
-import com.se14.domain.UserRole;
+import com.mysql.cj.x.protobuf.MysqlxExpr;
+import com.se14.domain.*;
 import com.se14.repository.ProjectRepository;
 import com.se14.repository.UserRepository;
 import com.se14.service.ProjectService;
@@ -51,7 +49,7 @@ public class ProjectServiceImplement implements ProjectService {
 
 
             // Save the project to the repository
-            projectRepository.save(newProject);
+            //projectRepository.save(newProject);
             return newProject;
         } catch (Exception e) {
             // Handle the exception, possibly logging it and returning null or throwing a custom exception
@@ -81,32 +79,37 @@ public class ProjectServiceImplement implements ProjectService {
     }
 
     @Override
-    public Map<Calendar, List<Issue>> getStatistic(Project project) {
-        Map<Calendar, List<Issue>> issueStatistics = new HashMap<>();
+    public Map<String, Object> getStatistic(Project project) {
+        Map<String, Object> statistics = new HashMap<>();
+        Map<Calendar, List<Issue>> dateIssuesMap = new HashMap<>();
+        Map<IssuePriority, Integer> priorityCountMap = new HashMap<>();
+        Map<IssueStatus, Integer> statusCountMap = new HashMap<>();
+
         List<Issue> issues = project.getIssues();
 
         for (Issue issue : issues) {
-            // Create a Calendar instance and set it to the issue's created date
+            // Date-based statistics
             Calendar issueDate = Calendar.getInstance();
             issueDate.setTime(issue.getReportedDate());
-
-            // Normalize the Calendar to remove time part for date-only comparison
             issueDate.set(Calendar.HOUR_OF_DAY, 0);
             issueDate.set(Calendar.MINUTE, 0);
             issueDate.set(Calendar.SECOND, 0);
             issueDate.set(Calendar.MILLISECOND, 0);
-
-            // Create a new instance for the key to avoid reference equality issues
             Calendar normalizedDate = (Calendar) issueDate.clone();
+            dateIssuesMap.computeIfAbsent(normalizedDate, k -> new ArrayList<>()).add(issue);
 
-            // Add the issue to the corresponding date in the map
-            if (!issueStatistics.containsKey(normalizedDate)) {
-                issueStatistics.put(normalizedDate, new ArrayList<Issue>());
-            }
-            issueStatistics.get(normalizedDate).add(issue);
+            // Priority-based statistics
+            priorityCountMap.put(issue.getPriority(), priorityCountMap.getOrDefault(issue.getPriority(), 0) + 1);
+
+            // Status-based statistics
+            statusCountMap.put(issue.getStatus(), statusCountMap.getOrDefault(issue.getStatus(), 0) + 1);
         }
 
-        return issueStatistics;
+        statistics.put("dateIssues", dateIssuesMap);
+        statistics.put("priorityCount", priorityCountMap);
+        statistics.put("statusCount", statusCountMap);
+
+        return statistics;
     }
 
     @Override
@@ -140,5 +143,17 @@ public class ProjectServiceImplement implements ProjectService {
     @Override
     public Project findProjectById(long id) {
         return projectRepository.findById(id).orElse(null);
+    }
+    @Override
+    public List<Project> findProjectByUser(User user) {
+        List<Project> allProjects = projectRepository.findAll();
+        List<Project> userProjects = new ArrayList<>();
+
+        for (Project project : allProjects) {
+            if (project.getMembers().containsKey(user)) {
+                userProjects.add(project);
+            }
+        }
+        return userProjects;
     }
 }

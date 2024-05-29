@@ -20,7 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class ProjectServiceImplementTest {
+public class ProjectServiceImplementTest2 {
 
     @Mock
     private ProjectRepository projectRepository;
@@ -55,21 +55,12 @@ public class ProjectServiceImplementTest {
             project.setProjectId(i);
             project.setProjectTitle("Project " + i);
             project.setProjectDescription("Description for Project " + i);
-            //project.setMembers(new HashMap<>());
-            //project.setIssues(new ArrayList<>());
+            project.setMembers(new HashMap<>());
+            project.setIssues(new ArrayList<>());
             projects.add(project);
         }
 
-        /*
         // Assign Users to Projects
-
-        for (Project project : projects) {
-            project.setMembers(new HashMap<>());
-            for (User user : users) {
-                project.getMembers().put(user, Arrays.asList(UserRole.DEVELOPER, UserRole.TESTER));
-            }
-            project.getMembers().get(users.get(0)).add(UserRole.ADMIN); //0번 유저에게 어드민주기
-        }*/
         for (Project project : projects) {
             project.setMembers(new HashMap<>());
             for (User user : users) {
@@ -78,7 +69,6 @@ public class ProjectServiceImplementTest {
             }
             project.getMembers().get(users.get(0)).add(UserRole.ADMIN); // Add ADMIN role to the first user
         }
-
 
         // Assign Issues to Projects
         Calendar cal = Calendar.getInstance();
@@ -150,22 +140,36 @@ public class ProjectServiceImplementTest {
         assertThat(project.getMembers().get(user)).contains(role2);
 
         verify(projectRepository, atLeastOnce()).save(project);
-
     }
-/*
+
     @Test
     @DisplayName("Get Statistic by Date")
-
     void testGetStatistic() {
         Project project = projects.get(0);
 
-        Map<Calendar, List<Issue>> statistics = projectService.getStatistic(project);
+        Map<String, Object> statistics = projectService.getStatistic(project);
 
         assertThat(statistics).isNotNull();
-        assertThat(statistics).hasSize(10);
+        assertThat(statistics).containsKeys("dateIssues", "priorityCount", "statusCount");
+
+        // Verify the dateIssues map
+        Map<Calendar, List<Issue>> dateIssues = (Map<Calendar, List<Issue>>) statistics.get("dateIssues");
+        assertThat(dateIssues).isNotNull();
+        assertThat(dateIssues).hasSize(10);
+
+        // Verify the priorityCount map
+        Map<IssuePriority, Integer> priorityCount = (Map<IssuePriority, Integer>) statistics.get("priorityCount");
+        assertThat(priorityCount).isNotNull();
+        assertThat(priorityCount.get(IssuePriority.MAJOR)).isEqualTo(10);
+
+        // Verify the statusCount map
+        Map<IssueStatus, Integer> statusCount = (Map<IssueStatus, Integer>) statistics.get("statusCount");
+        assertThat(statusCount).isNotNull();
+        assertThat(statusCount.get(IssueStatus.NEW)).isEqualTo(10);
+
         verify(projectRepository, never()).save(any(Project.class));
     }
-*/
+
     @Test
     @DisplayName("List Users by Role")
     void testListUserByRole() {
@@ -201,6 +205,7 @@ public class ProjectServiceImplementTest {
         assertThrows(RuntimeException.class, () -> projectService.listProject());
         verify(projectRepository).findAll();
     }
+
     @Test
     @DisplayName("Handle exception in createProject")
     void testCreateProjectException() {
@@ -230,7 +235,7 @@ public class ProjectServiceImplementTest {
         assertThrows(RuntimeException.class, () -> projectService.addMemberToProject(project, user, role));
         verify(projectRepository).save(any(Project.class));
     }
-    /*
+
     @Test
     @DisplayName("Handle empty issues in getStatistic")
     void testGetStatisticEmptyIssues() {
@@ -239,11 +244,18 @@ public class ProjectServiceImplementTest {
         project.setIssues(new ArrayList<>()); // No issues
 
         // Act
-        Map<Calendar, List<Issue>> statistics = projectService.getStatistic(project);
+        Map<String, Object> statistics = projectService.getStatistic(project);
 
         // Assert
-        assertThat(statistics).isEmpty();
-    }*/
+        assertThat(statistics).isNotNull();
+        assertThat(((Map<Calendar, List<Issue>>) statistics.get("dateIssues")).isEmpty()).isTrue();
+        assertThat(((Map<IssuePriority, Integer>) statistics.get("priorityCount")).isEmpty()).isTrue();
+        assertThat(((Map<IssueStatus, Integer>) statistics.get("statusCount")).isEmpty()).isTrue();
+        //assertThat(statistics.get("dateIssues")).isInstanceOf(Map.class).isEmpty();
+        //assertThat(statistics.get("priorityCount")).isInstanceOf(Map.class).isEmpty();
+        //assertThat(statistics.get("statusCount")).isInstanceOf(Map.class).isEmpty();
+    }
+
     @Test
     @DisplayName("Handle no users with specified role in listUser")
     void testListUserNoRole() {
@@ -257,6 +269,7 @@ public class ProjectServiceImplementTest {
         // Assert
         assertThat(usersWithRole).isEmpty();
     }
+
     @Test
     @DisplayName("Handle user not in project in hasUser")
     void testHasUserNotInProject() {
@@ -272,8 +285,17 @@ public class ProjectServiceImplementTest {
         // Assert
         assertThat(result).isFalse();
     }
+    @Test
+    @DisplayName("Find Projects by User")
+    void testFindProjectByUser() {
+        User user = users.get(0);
+        when(projectRepository.findAll()).thenReturn(projects);
 
+        List<Project> userProjects = projectService.findProjectByUser(user);
 
-
+        assertThat(userProjects).isNotEmpty();
+        assertThat(userProjects.size()).isEqualTo(3);  // Assuming the user is part of all projects
+        verify(projectRepository).findAll();
+    }
 
 }
