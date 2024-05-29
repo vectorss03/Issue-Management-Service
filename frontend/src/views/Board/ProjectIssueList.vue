@@ -22,7 +22,7 @@
 
           <button id="statusDropdownButton" data-dropdown-toggle="statusDropdown"
                   class="mx-2.5 text-black focus:outline-none font-medium rounded text-sm px-2 py-2.5 text-center inline-flex items-center"
-                  :class="statusSelected ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
+                  :class="filter.status ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
                   type="button" data-dropdown-offset-skidding="50">
             Status
             <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -47,12 +47,17 @@
                 </div>
               </li>
             </ul>
+            <label
+                class="flex items-center p-3 text-sm font-medium text-gray-700 border-t border-gray-200 rounded-b-lg bg-gray-50  hover:bg-gray-100 hover:underline"
+                @click="filter.status = null">
+              Cancel Selection
+            </label>
           </div>
 
 
           <button id="priorityDropdownButton" data-dropdown-toggle="priorityDropdown"
                   class="mx-2.5 text-black focus:outline-none font-medium rounded text-sm px-2 py-2.5 text-center inline-flex items-center"
-                  :class="prioritySelected ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
+                  :class="filter.priority ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
                   type="button" data-dropdown-offset-skidding="47">
             Priority
             <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -76,6 +81,11 @@
                 </div>
               </li>
             </ul>
+            <label
+                class="flex items-center p-3 text-sm font-medium text-gray-700 border-t border-gray-200 rounded-b-lg bg-gray-50  hover:bg-gray-100 hover:underline"
+                @click="filter.priority = null">
+              Cancel Selection
+            </label>
           </div>
 
 
@@ -400,14 +410,14 @@
 <script setup>
 import {computed, inject, onMounted, ref, watch} from 'vue'
 import {initFlowbite} from 'flowbite'
-import {useRoute} from "vue-router";
+import {useRoute, useRouter} from "vue-router";
 import StatusBadge from "@/components/StatusBadge.vue";
 import PriorityBadge from "@/components/PriorityBadge.vue";
-import qs from "qs";
 import store from "@/vuex/store";
 
 const axios = inject('axios')
 const route = useRoute()
+const router = useRouter()
 
 const myName = computed(() => store.state.username)
 const userList = ref([
@@ -427,19 +437,13 @@ const issueForm = {
 
 const filter = ref({
   "keyword": "",
-  "status": [],
-  "priority": [],
+  "status": null,
+  "priority": null,
   "assignee": "",
   "fixer": "",
   "reporter": "",
 })
 
-const statusSelected = computed(() => {
-  return filter.value.status.length > 0
-})
-const prioritySelected = computed(() => {
-  return filter.value.priority.length > 0
-})
 let searchTimeout = null
 
 onMounted(() => {
@@ -454,12 +458,14 @@ watch(filter.value, () => searchIssues())
 function resetFilter() {
   filter.value = {
     "keyword": "",
-    "status": [],
-    "priority": [],
+    "status": null,
+    "priority": null,
     "assignee": "",
     "fixer": "",
     "reporter": "",
   }
+  watch(filter.value, () => searchIssues())
+  searchIssues()
 }
 
 function searchUsers(event) {
@@ -477,17 +483,16 @@ function searchIssues() {
 }
 
 function search() {
-  console.log("send query to server")
   console.log(filter.value.status)
-  axios.get('/api/test', {
-    params: filter.value,
-    paramsSerializer: params => {
-      return qs.stringify(params, {arrayFormat: "comma"});
-    }
+  router.replace({ path: '/projects/' + route.params.project_id + '/issues', query: filter.value })
+
+  axios.get('/api/projects/' + route.params.project_id + '/issues', {
+    params: filter.value
   }).then(response => {
     console.log(response)
+    issueList.value = response.data
   }).catch(error => {
-    // console.log(error)
+    console.log(error)
     if (error.message.indexOf('Network Error') > -1) {
       alert('Network Error\nPlease Try again later')
     }

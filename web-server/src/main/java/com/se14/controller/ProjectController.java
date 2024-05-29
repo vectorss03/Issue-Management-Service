@@ -1,8 +1,10 @@
 package com.se14.controller;
 
 import com.se14.domain.*;
+import com.se14.dto.FilterDTO;
 import com.se14.dto.IssueDTO;
 import com.se14.dto.ProjectDTO;
+import com.se14.service.SearchCriteria;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import jakarta.servlet.http.HttpSession;
@@ -60,12 +61,36 @@ public class ProjectController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @GetMapping("/{projectId}/issues")
-    public List<IssueDTO> issueList(@PathVariable("projectId") int projectId) {
-        Project project = projectService.findProjectById(projectId);
-        List<Issue> issues = issueService.searchIssues(project,null);
+//    @GetMapping("/{projectId}/issues")
+//    public List<IssueDTO> issueList(@PathVariable("projectId") int projectId) {
+//        Project project = projectService.findProjectById(projectId);
+//        List<Issue> issues = issueService.searchIssues(project,null);
+//
+//        return issues.stream().map(IssueDTO::new).toList();
+//    }
 
-        return issues.stream().map(IssueDTO::new).toList();
+//    @GetMapping("/{projectId}/issues")
+//    public List<IssueDTO> issueQueriedList(@PathVariable("projectId") int projectId,
+//                                           @RequestParam(value = "keyword", required = false) String keyword,
+//                                           @RequestParam(value = "status", required = false) String status,
+//                                           @RequestParam(value = "priority", required = false) String priority,
+//                                           @RequestParam(value = "assignee", required = false) String assignee,
+//                                           @RequestParam(value = "fixer", required = false) String fixer,
+//                                           @RequestParam(value = "reporter", required = false) String reporter) {
+    @GetMapping("/{projectId}/issues")
+    public List<IssueDTO> issueQueriedList(@PathVariable("projectId") int projectId, @ModelAttribute FilterDTO filter) {
+
+        Project project = projectService.findProjectById(projectId);
+
+        SearchCriteria searchCriteria = new SearchCriteria();
+        searchCriteria.setTitle(filter.getKeyword());
+        if (filter.getStatus() != null) searchCriteria.setStatus(IssueStatus.valueOf(filter.getStatus()));
+        if (filter.getPriority() != null) searchCriteria.setPriority(IssuePriority.valueOf(filter.getPriority()));
+        searchCriteria.setAssignee(userService.findByUsername(filter.getAssignee()));
+        searchCriteria.setFixer(userService.findByUsername(filter.getFixer()));
+        searchCriteria.setReporter(userService.findByUsername(filter.getReporter()));
+
+        return issueService.searchIssues(project, searchCriteria).stream().map(IssueDTO::new).toList();
     }
 
     @PostMapping("/{projectId}/issues")
@@ -90,9 +115,6 @@ public class ProjectController {
 
         return project.getMembers().get(user);
     }
-//
-
-//
 
 //
 //    @GetMapping("/{projectId}/users")

@@ -33,6 +33,7 @@ dependencies {
 	testImplementation 'org.assertj:assertj-core:3.25.3'
 	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
 	compileOnly 'org.projectlombok:lombok:1.18.32'
+	annotationProcessor('org.projectlombok:lombok')
 
 	implementation platform("org.springframework.ai:spring-ai-bom:0.8.1-SNAPSHOT")
 	implementation 'org.springframework.ai:spring-ai-vertex-ai-palm2'
