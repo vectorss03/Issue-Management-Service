@@ -38,17 +38,20 @@ public class ProjectController {
     @GetMapping
     public List<Project> projectList(HttpSession session) {
         User user = userService.findByUsername(session.getAttribute("username"));
+        List<Project> projects = projectService.findProjectByUser(user);
 
-        List<Project> projects = projectService.listProject();
-        List<Project> accessibleProjects = new ArrayList<>();
-        for (Project project : projects) {
-            if (projectService.hasUser(project, user)) {
-                accessibleProjects.add(project);
-            }
-        }
-        return accessibleProjects;
+//        List<Project> projects = projectService.listProject();
+//        List<Project> accessibleProjects = new ArrayList<>();
+//        for (Project project : projects) {
+//            if (projectService.hasUser(project, user)) {
+//                accessibleProjects.add(project);
+//            }
+//        }
+//        return accessibleProjects;
+        return projects;
+
     }
-    //ProjectService쪽 수정되었을 때 추가 작업 필요
+    //ProjectService쪽 수정되었을 때 추가 작업 필요 => ProjectService에 findProjectByUser()추가됨, 그에 따라 수정 했음
 
     @PostMapping
     public ResponseEntity<Void> createProject(@RequestBody Map<String, String> params) {
@@ -99,6 +102,7 @@ public class ProjectController {
                 break;
             }
         }
+        //이거 issueService쪽에 기능 추가 필요함
         return deatiledIssue;
     }
 
@@ -169,20 +173,30 @@ public class ProjectController {
 
     @GetMapping("/{projectId}/users")
     public List<User> userList(@PathVariable int projectId) {
-        List<User> users = projectService.listUser();
-        
+        Project currentProject = projectService.findProjectById(projectId);
 
-        return users;
+        List<User> usersInProject = projectService.listUser(currentProject, ?);
+        //프론트 엔드 쪽 수정 필요함
+
+        return usersInProject;
+        //프로젝트에 참가한 유저들 반환
     }
 
     @GetMapping("/{projectId}/users/join")
     public List<User> userJoinList(@PathVariable int projectId) {
-        List<user> users = userService.listAllUser();
+        Project currentProject = projectService.findProjectById(projectId);
 
-        return users;
+        List<user> all_users = userService.listAllUser();
+        List<user> usersNotInProject;
+
+        for(User user: all_users){
+            if(projectService.hasUser(project, user))
+                usersNotInProject.add(user);
+        }
+
+        return usersNotInProject;
+        //프로젝트에 참가해 있지 않은 유저들 반환
     }
-    //
-
 
     @PostMapping("/{projectId}/users")
     public ResponseEntity<Void> addUser(@PathVariable int projectId, @RequestBody Map<String, String> params) {
@@ -201,7 +215,7 @@ public class ProjectController {
 
         //void addMemberToProject(Project project,User user, UserRole role);
         projectService.addMemberToProject(currentProject, user, role);
-        //Vue쪽에서 role 처리 해야할 듯
+        //Vue쪽에서 role 처리 해야 함
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
