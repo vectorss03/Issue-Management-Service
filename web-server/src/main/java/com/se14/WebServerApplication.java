@@ -1,4 +1,4 @@
-package com.Server.Web_Server;
+package com.se14;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,10 +10,7 @@ public class WebServerApplication {
 
 		SpringApplication.run(WebServerApplication.class, args);
 		System.out.println("SERVER STARTED!!!");
-
 	}
-
-
 }
 
 //진입점

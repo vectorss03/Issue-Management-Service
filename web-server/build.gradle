@@ -4,7 +4,7 @@ plugins {
 	id 'io.spring.dependency-management' version '1.1.5'
 }
 
-group = 'com.Server'
+group = 'com.se14'
 version = '0.0.1-SNAPSHOT'
 
 java {
@@ -12,16 +12,30 @@ java {
 }
 
 repositories {
+	mavenLocal()  // Add this line to ensure local Maven dependencies can be resolved
 	mavenCentral()
+	maven { url 'https://repo.spring.io/milestone' }
+	maven { url 'https://repo.spring.io/snapshot' }
 }
 
+
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-mustache'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	runtimeOnly 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	implementation group: 'com.mysql', name: 'mysql-connector-j', version: '8.4.0'
+
+	testImplementation 'org.mockito:mockito-core:4.5.1'
+	testImplementation 'org.mockito:mockito-junit-jupiter:4.5.1'
+
+	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+	testImplementation 'org.assertj:assertj-core:3.25.3'
+	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+	compileOnly 'org.projectlombok:lombok:1.18.32'
+
+	implementation platform("org.springframework.ai:spring-ai-bom:0.8.1-SNAPSHOT")
+	implementation 'org.springframework.ai:spring-ai-vertex-ai-palm2'
 }
 
 tasks.named('test') {

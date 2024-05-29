@@ -110,6 +110,7 @@
 <script setup>
 import {inject, onMounted, ref} from "vue";
 import {initFlowbite} from 'flowbite'
+import store from "@/vuex/store";
 
 const axios = inject('axios')
 
@@ -125,6 +126,7 @@ const projectForm = {
 onMounted(() => {
   initFlowbite();
   getProjects()
+  store.commit("setRoles", [])
 })
 
 
@@ -138,6 +140,7 @@ function getProjects() {
       .then(response => {
         projectList = response.data
         searchedProjectList.value = projectList
+        console.log(projectList)
       })
       .catch(error => {
         console.log(error)

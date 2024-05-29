@@ -39,8 +39,8 @@
               <li v-for="(status, index) in ['New', 'Assigned', 'Fixed', 'Resolved', 'Closed', 'Reopened']"
                   :key="index">
                 <div class="flex items-center p-2 rounded hover:bg-gray-100">
-                  <input :id="`status-` + status" type="checkbox" :value="status.toUpperCase()"
-                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-0"
+                  <input :id="`status-` + status" type="radio" :value="status.toUpperCase()"
+                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                          v-model="filter.status">
                   <label :for="`status-` + status"
                          class="w-full ms-2 text-sm font-medium text-gray-900 rounded">{{ status }}</label>
@@ -68,8 +68,8 @@
             <ul class="p-3 space-y-1 text-sm text-gray-700" aria-labelledby="dropdownBgHoverButton">
               <li v-for="(priority, index) in ['Blocker', 'Critical', 'Major', 'Minor', 'Trivial']" :key="index">
                 <div class="flex items-center p-2 rounded hover:bg-gray-100">
-                  <input :id="`priority-` + priority" type="checkbox" :value="priority.toUpperCase()"
-                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-0"
+                  <input :id="`priority-` + priority" type="radio" :value="priority.toUpperCase()"
+                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                          v-model="filter.priority">
                   <label :for="`priority-` + priority"
                          class="w-full ms-2 text-sm font-medium text-gray-900 rounded">{{ priority }}</label>
@@ -450,6 +450,7 @@ let searchTimeout = null
 
 onMounted(() => {
   initFlowbite();
+  getRoles()
   getIssues()
   getUsers()
 })
@@ -499,6 +500,18 @@ function search() {
   })
 }
 
+function getRoles() {
+  axios.get('/api/projects/' + route.params.project_id + '/roles')
+      .then(response => {
+        console.log(response.data)
+        store.commit("setRoles", response.data)
+      }).catch(error => {
+    console.log(error)
+    if (error.message.indexOf('Network Error') > -1) {
+      alert('Network Error\nPlease Try again later')
+    }
+  })
+}
 
 function getIssues() {
   axios.get('/api/projects/' + route.params.project_id + '/issues')
