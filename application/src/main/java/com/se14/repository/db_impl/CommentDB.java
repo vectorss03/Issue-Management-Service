@@ -4,7 +4,6 @@ import com.se14.domain.Comment;
 import com.se14.domain.Issue;
 import com.se14.repository.CommentRepository;
 
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,24 +18,32 @@ public class CommentDB implements CommentRepository {
 
     @Override
     public Comment save(Comment comment, Issue issue) {
-        String sql = "INSERT INTO comments (title, text, timestamp, issue_id, author_id) VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            statement.setString(1, comment.getCommentTitle());
-            statement.setString(2, comment.getText());
-            statement.setTimestamp(3, new Timestamp(comment.getTimestamp().getTime()));
-            statement.setLong(4, issue.getIssueId());
-            statement.setInt(5, comment.getAuthor().getUserId());
-            statement.executeUpdate();
+        // 코멘트가 이미 있는지 확인
+        Optional<Comment> existingComment = findById(comment.getID());
+        if (existingComment.isPresent()) {
+            // 코멘트가 있으면, update.
+            return update(comment);
+        } else {
+            // 없으면 새로 insert.
+            String sql = "INSERT INTO comments (title, text, timestamp, issue_id, author_id) VALUES (?, ?, ?, ?, ?)";
+            try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                statement.setString(1, comment.getCommentTitle());
+                statement.setString(2, comment.getText());
+                statement.setTimestamp(3, new Timestamp(comment.getTimestamp().getTime()));
+                statement.setLong(4, issue.getIssueId());
+                statement.setInt(5, comment.getAuthor().getUserId());
+                statement.executeUpdate();
 
-            ResultSet generatedKeys = statement.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                comment.setID(generatedKeys.getLong(1));
-                return comment;
+                ResultSet generatedKeys = statement.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    comment.setID(generatedKeys.getInt(1));
+                    return comment;
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+            return null;
         }
-        return null;
     }
 
     @Override
@@ -72,11 +79,26 @@ public class CommentDB implements CommentRepository {
 
     private Comment mapResultSetToComment(ResultSet resultSet) throws SQLException {
         Comment comment = new Comment();
-        comment.setID(resultSet.getLong("comment_id"));
+        comment.setID(resultSet.getInt("comment_id"));
         comment.setCommentTitle(resultSet.getString("title"));
         comment.setText(resultSet.getString("text"));
         comment.setTimestamp(resultSet.getTimestamp("timestamp"));
 
         return comment;
+    }
+
+    private Comment update(Comment comment) {
+        String sql = "UPDATE comments SET title = ?, text = ?, timestamp = ? WHERE comment_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, comment.getCommentTitle());
+            statement.setString(2, comment.getText());
+            statement.setTimestamp(3, new Timestamp(comment.getTimestamp().getTime()));
+            statement.setLong(4, comment.getID());
+            statement.executeUpdate();
+            return comment;
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
     }
 }

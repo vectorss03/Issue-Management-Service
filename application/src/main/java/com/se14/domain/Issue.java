@@ -16,7 +16,7 @@ public class Issue {
     private User fixer;
     private User assignee;
     private List<Comment> comments;
-    private long id;
+    private int id = -1;
 
 
     @Override
@@ -141,8 +141,8 @@ public class Issue {
     }
 
     //setter and getter for issue id for DB management
-    public void setIssueId(long id) { this.id = id;
+    public void setIssueId(int id) { this.id = id;
     }
 
-    public long getIssueId() { return id; }
+    public int getIssueId() { return id; }
 }
