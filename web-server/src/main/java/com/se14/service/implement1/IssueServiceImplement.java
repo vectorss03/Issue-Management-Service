@@ -62,6 +62,7 @@ public class IssueServiceImplement implements IssueService{
     public void assignIssue(Project project,User assigner, Issue issue, User assignee) {
         if (issue.getStatus() == IssueStatus.NEW || issue.getStatus() == IssueStatus.REOPENED) {
             issue.setAssignee(assignee);
+            issue.setFixer(null);
             issue.setStatus(IssueStatus.ASSIGNED);
             issueRepository.save(issue,project);
         }else{

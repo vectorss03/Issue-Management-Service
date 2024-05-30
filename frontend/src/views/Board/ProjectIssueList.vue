@@ -296,7 +296,9 @@
       <div
           class="w-full md:w-auto flex flex-col md:flex-row space-y-2 md:space-y-0 items-stretch md:items-center justify-end md:space-x-3 flex-shrink-0">
         <button data-modal-target="report-issue-modal" data-modal-toggle="report-issue-modal"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-lg">Report Issue
+                class="text-white font-bold py-2 px-4 rounded shadow-lg" v-bind:disabled="!isTester" v-bind:title="isTester ? false : 'You do not have permission to report issue'"
+                :class="isTester ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-500 hover:bg-gray-600'">
+          Report Issue
         </button>
       </div>
 
@@ -448,6 +450,10 @@ const filter = ref({
   "assignee": "",
   "fixer": "",
   "reporter": "",
+})
+
+const isTester = computed(() => {
+  return store.getters.hasRole('ADMIN') || store.getters.hasRole('TESTER')
 })
 
 let searchTimeout = null
