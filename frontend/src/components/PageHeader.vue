@@ -6,7 +6,7 @@
         <img src="https://flowbite.com/docs/images/logo.svg" class="mr-3 h-6 sm:h-9" alt="Flowbite Logo"/>
         <span class="self-center text-xl font-semibold whitespace-nowrap">Issue Management System</span>
       </router-link>
-      <div class="flex items-center lg:order-2" v-if="!isLoggedIn">
+      <div class="flex items-center lg:order-2" v-if="!isAuthenticated">
         <router-link to="/login" class="text-gray-800 hover:bg-gray-50 font-medium rounded-lg text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 focus:outline-none">
           Log in
         </router-link>
@@ -15,7 +15,7 @@
         </router-link>
       </div>
       <div class="flex items-center lg:order-2" v-else>
-        <p class="text-gray-800 font-medium rounded-lg text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 focus:outline-none">{{getUsername}}</p>
+        <p class="text-gray-800 font-medium rounded-lg text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 focus:outline-none">Welcome, {{getUsername}}</p>
         <button type="button" @click="logout" class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 focus:outline-none">
           Log Out
         </button>
@@ -31,8 +31,8 @@ import {computed} from "vue";
 import axios from "axios";
 import router from "@/router";
 
-const isLoggedIn = computed(() => {
-  return store.getters.isLoggedIn
+const isAuthenticated = computed(() => {
+  return store.getters.isAuthenticated
 });
 
 const getUsername = computed(() => {
@@ -45,9 +45,10 @@ function logout() {
     console.log(response)
     // loginForm.username = ""
     // loginForm.password = ""
-    store.commit("setUsername", '')
+    store.commit("logout")
     alert("logout")
-    router.go(0)
+    // router.go('/projects')
+    router.push('/projects')
   }).catch(error => {
     console.log(error)
     alert("logout failed")
