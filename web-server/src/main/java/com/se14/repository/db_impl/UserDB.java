@@ -21,8 +21,7 @@ public class UserDB implements UserRepository {
     public User save(User user) {
 
         //막 생성된 유저, 저장이 안된 유저.
-
-        if (user.getUserId() <= -1) {
+        if (user.getUserId() == null || user.getUserId() <= -1) {
             // username 이미 있는지 확인
             User existingUser = findByUsername(user.getUsername());
             if (existingUser != null) {
@@ -40,9 +39,10 @@ public class UserDB implements UserRepository {
             String sql = "INSERT INTO users (user_id, username, password, email) VALUES (?, ?, ?, ?)";
             try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 statement.setLong(1, user.getUserId());
+
                 statement.setString(2, user.getUsername());
                 statement.setString(3, user.getPassword());
-                statement.setString(4, user.getEmail());
+                setNullableString(statement,4,user.getEmail());
                 statement.executeUpdate();
 
                 return user;
@@ -50,6 +50,14 @@ public class UserDB implements UserRepository {
                 ex.printStackTrace();
             }
             return null;
+        }
+    }
+
+    private void setNullableString(PreparedStatement statement, int index, String value) throws SQLException {
+        if (value != null) {
+            statement.setString(index, value);
+        }else{
+            statement.setNull(index, Types.VARCHAR);
         }
     }
 
