@@ -123,9 +123,13 @@ public class ProjectDB implements ProjectRepository {
         String sql = "INSERT INTO issues (issue_id, title, description, status, priority, date, project_id, reporter_id, fixer_id, assignee_id) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                 "ON DUPLICATE KEY UPDATE title = VALUES(title), description = VALUES(description), status = VALUES(status), priority = VALUES(priority), date = VALUES(date), reporter_id = VALUES(reporter_id), fixer_id = VALUES(fixer_id), assignee_id = VALUES(assignee_id)";
+
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (Issue issue : project.getIssues()) {
-                statement.setInt(1, issue.getIssueId() != -1 ? issue.getIssueId() : generateUniqueIssueId());
+                int issueId = issue.getIssueId() != -1 ? issue.getIssueId() : generateUniqueIssueId();
+                issue.setIssueId(issueId); // issue id에 대한 예외처리 좀... 확실하게...
+
+                statement.setInt(1, issueId);
                 statement.setString(2, issue.getTitle());
                 statement.setString(3, issue.getDescription());
                 statement.setString(4, issue.getStatus().toString());
@@ -133,15 +137,35 @@ public class ProjectDB implements ProjectRepository {
                 statement.setDate(6, new java.sql.Date(issue.getReportedDate().getTime()));
                 statement.setString(7, project.getProjectId().toString());
                 statement.setInt(8, issue.getReporter().getUserId());
-                statement.setInt(9, issue.getFixer() != null ? issue.getFixer().getUserId() : null);
-                statement.setInt(10, issue.getAssignee() != null ? issue.getAssignee().getUserId() : null);
+
+                //setNullableInt 헬퍼 함수 추가
+                setNullableInt(statement, 8, issue.getFixer() != null ? issue.getFixer().getUserId() : null);
+                setNullableInt(statement, 9, issue.getAssignee() != null ? issue.getAssignee().getUserId() : null);
+
                 statement.addBatch();
             }
             statement.executeBatch();
         }
+
+        // project save 시 코멘트까지 반영하게끔.
+        for (Issue issue : project.getIssues()) {
+            for (Comment comment : issue.getComments()) {
+                commentRepository.save(comment, issue);
+            }
+        }
     }
+
+    private void setNullableInt(PreparedStatement statement, int parameterIndex, Integer value) throws SQLException {
+        if (value != null) {
+            statement.setInt(parameterIndex, value);
+        } else {
+            statement.setNull(parameterIndex, java.sql.Types.INTEGER);
+        }
+    }
+
+
     private int generateUniqueIssueId() {
-        String sql = "SELECT MAX(is) AS max_id FROM issues";
+        String sql = "SELECT MAX(issue_id) AS max_id FROM issues";
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(sql)) {
             if (resultSet.next()) {
@@ -223,7 +247,7 @@ public class ProjectDB implements ProjectRepository {
 
 
     private List<Issue> getProjectIssues(Integer projectId) throws SQLException {
-        String sql = "SELECT * FROM projects WHERE project_id = ?";
+        String sql = "SELECT * FROM issues WHERE project_id = ?";
         List<Issue> issues = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, projectId);
