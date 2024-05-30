@@ -142,8 +142,8 @@ public class ProjectServiceImplementTest {
         UserRole role = UserRole.TESTER;
         UserRole role2 = UserRole.PROJECT_LEAD;
 
-        projectService.addMemberToProject(project, user, role);
-        projectService.addMemberToProject(project, user, role2);
+        projectService.addMemberToProject(project, user, Arrays.asList(role));
+        projectService.addMemberToProject(project, user, Arrays.asList(role2));
 
         assertThat(project.getMembers()).containsKey(user);
         assertThat(project.getMembers().get(user)).contains(role);
@@ -227,7 +227,7 @@ public class ProjectServiceImplementTest {
         doThrow(new RuntimeException("Database error")).when(projectRepository).save(any(Project.class));
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> projectService.addMemberToProject(project, user, role));
+        assertThrows(RuntimeException.class, () -> projectService.addMemberToProject(project, user, Arrays.asList(role)));
         verify(projectRepository).save(any(Project.class));
     }
     /*
@@ -272,6 +272,21 @@ public class ProjectServiceImplementTest {
         // Assert
         assertThat(result).isFalse();
     }
+    @Test
+    @DisplayName("Find Users by Project")
+    void testFindUserByProject() {
+        Project project = projects.get(0);
+        when(projectRepository.findById(project.getProjectId())).thenReturn(Optional.of(project));
+
+        List<User> users = projectService.findUserByProject(project);
+
+        assertThat(users).isNotEmpty();
+        assertThat(users.size()).isEqualTo(5);  // Assuming 5 users were added to each project in the setup
+        assertThat(users).containsAll(project.getMembers().keySet());
+
+        verify(projectRepository).findById(project.getProjectId());
+    }
+
 
 
 
