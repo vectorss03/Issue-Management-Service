@@ -1,9 +1,7 @@
 package com.se14.service.implement1;
 
-import com.se14.domain.Issue;
-import com.se14.domain.Project;
-import com.se14.domain.User;
-import com.se14.domain.UserRole;
+import com.mysql.cj.x.protobuf.MysqlxExpr;
+import com.se14.domain.*;
 import com.se14.repository.ProjectRepository;
 import com.se14.repository.UserRepository;
 import com.se14.service.ProjectService;
@@ -47,11 +45,11 @@ public class ProjectServiceImplement implements ProjectService {
             newProject.setProjectDescription(description);
 
             // Add the creator as an admin to the project
-            addMemberToProject(newProject, creator, UserRole.ADMIN);
+            addMemberToProject(newProject, creator, Arrays.asList(UserRole.ADMIN));
 
 
             // Save the project to the repository
-            projectRepository.save(newProject);
+            //projectRepository.save(newProject);
             return newProject;
         } catch (Exception e) {
             // Handle the exception, possibly logging it and returning null or throwing a custom exception
@@ -62,15 +60,18 @@ public class ProjectServiceImplement implements ProjectService {
     }
 
     @Override
-    public void addMemberToProject(Project project, User user, UserRole role) {
+    public void addMemberToProject(Project project, User user, List<UserRole> roles) {
         try {
             if (!project.getMembers().containsKey(user)) {
                 project.getMembers().put(user, new ArrayList<>());
             }
-            if (!project.getMembers().get(user).contains(role)) {
-                project.getMembers().get(user).add(role);
-            }else {
-                System.out.println("User already has role");
+            List<UserRole> existingRoles = project.getMembers().get(user);
+            for (UserRole role : roles) {
+                if (!existingRoles.contains(role)) {
+                    existingRoles.add(role);
+                } else {
+                    System.out.println("User already has role: " + role);
+                }
             }
             projectRepository.save(project);
         } catch (Exception e) {
@@ -80,33 +81,39 @@ public class ProjectServiceImplement implements ProjectService {
         }
     }
 
+
     @Override
-    public Map<Calendar, List<Issue>> getStatistic(Project project) {
-        Map<Calendar, List<Issue>> issueStatistics = new HashMap<>();
+    public Map<String, Object> getStatistic(Project project) {
+        Map<String, Object> statistics = new HashMap<>();
+        Map<Calendar, List<Issue>> dateIssuesMap = new HashMap<>();
+        Map<IssuePriority, Integer> priorityCountMap = new HashMap<>();
+        Map<IssueStatus, Integer> statusCountMap = new HashMap<>();
+
         List<Issue> issues = project.getIssues();
 
         for (Issue issue : issues) {
-            // Create a Calendar instance and set it to the issue's created date
+            // Date-based statistics
             Calendar issueDate = Calendar.getInstance();
             issueDate.setTime(issue.getReportedDate());
-
-            // Normalize the Calendar to remove time part for date-only comparison
             issueDate.set(Calendar.HOUR_OF_DAY, 0);
             issueDate.set(Calendar.MINUTE, 0);
             issueDate.set(Calendar.SECOND, 0);
             issueDate.set(Calendar.MILLISECOND, 0);
-
-            // Create a new instance for the key to avoid reference equality issues
             Calendar normalizedDate = (Calendar) issueDate.clone();
+            dateIssuesMap.computeIfAbsent(normalizedDate, k -> new ArrayList<>()).add(issue);
 
-            // Add the issue to the corresponding date in the map
-            if (!issueStatistics.containsKey(normalizedDate)) {
-                issueStatistics.put(normalizedDate, new ArrayList<Issue>());
-            }
-            issueStatistics.get(normalizedDate).add(issue);
+            // Priority-based statistics
+            priorityCountMap.put(issue.getPriority(), priorityCountMap.getOrDefault(issue.getPriority(), 0) + 1);
+
+            // Status-based statistics
+            statusCountMap.put(issue.getStatus(), statusCountMap.getOrDefault(issue.getStatus(), 0) + 1);
         }
 
-        return issueStatistics;
+        statistics.put("dateIssues", dateIssuesMap);
+        statistics.put("priorityCount", priorityCountMap);
+        statistics.put("statusCount", statusCountMap);
+
+        return statistics;
     }
 
     @Override
@@ -141,4 +148,26 @@ public class ProjectServiceImplement implements ProjectService {
     public Project findProjectById(long id) {
         return projectRepository.findById(id).orElse(null);
     }
+    @Override
+    public List<Project> findProjectByUser(User user) {
+        List<Project> allProjects = projectRepository.findAll();
+        List<Project> userProjects = new ArrayList<>();
+
+        for (Project project : allProjects) {
+            if (project.getMembers().containsKey(user)) {
+                userProjects.add(project);
+            }
+        }
+        return userProjects;
+    }
+    @Override
+    public List<User> findUserByProject(Project project) {
+        Project foundProject = projectRepository.findById(project.getProjectId()).orElse(null);
+        if (foundProject == null) {
+            throw new IllegalArgumentException("Project not found");
+        }
+        return new ArrayList<>(foundProject.getMembers().keySet());
+    }
+
+
 }

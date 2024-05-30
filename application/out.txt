@@ -1,0 +1,3822 @@
+import com.se14.view.SwingView;
+
+public class ApplicationExample {
+    public static void main(String[] args) {
+        System.out.println(new ApplicationExample().helloWorld());
+        SwingView view = new SwingView();
+    }
+
+    public String helloWorld() {
+        return "Hello World!";
+    }
+}package com.se14.controller;
+
+import com.se14.domain.*;
+import com.se14.repository.CommentRepository;
+import com.se14.repository.IssueRepository;
+import com.se14.repository.ProjectRepository;
+import com.se14.repository.UserRepository;
+import com.se14.repository.fake.CommentRepositoryFake;
+import com.se14.repository.fake.IssueRepositoryFake;
+import com.se14.service.*;
+import com.se14.service.implement1.IssueServiceImplement;
+import com.se14.service.implement1.ProjectServiceImplement;
+import com.se14.service.implement1.SessionServiceImplement;
+import com.se14.service.implement1.UserServiceImplement;
+import com.se14.repository.fake.UserRepositoryFake;
+import com.se14.repository.fake.ProjectRepositoryFake;
+import com.se14.view.*;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Controller {
+    private static Controller instance;
+    private UserService userService;
+    private ProjectService projectService;
+    private SessionService sessionService;
+    private IssueService issueService;
+    private MainView mainView;
+    private LoginView loginView;
+    private SignInView signInView;
+
+    private Controller() {
+        // Initialize the services and repositories
+        UserRepository userRepository = new UserRepositoryFake();
+        userService = new UserServiceImplement(userRepository);
+        ProjectRepository projectRepository = new ProjectRepositoryFake(userRepository);
+        CommentRepository commentRepository =new CommentRepositoryFake();
+        IssueRepository issueRepository = new IssueRepositoryFake(projectRepository,commentRepository);
+        projectService = new ProjectServiceImplement(projectRepository, userRepository);
+        sessionService = new SessionServiceImplement();
+        issueService = new IssueServiceImplement(issueRepository,projectRepository,commentRepository);
+
+        // Initialize views
+        mainView = new MainView();
+        loginView = new LoginView();
+        signInView = new SignInView();
+
+        // Add action listeners to MainView
+        mainView.addLoginButtonListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showLoginView();
+            }
+        });
+
+        mainView.addSignInButtonListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showSignInView();
+            }
+        });
+
+        mainView.addLogoutButtonListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                logout();
+            }
+        });
+        mainView.addHomeButtonListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sessionService.setCurrentProject(null);
+                sessionService.setCurrentIssue(null);
+                mainView.showView("Projects");
+            }
+        });
+        mainView.addCreateProjectButtonListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                createNewProject();
+            }
+        });
+        mainView.getIssuePanel().addFilterButtonListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                filterIssues();
+            }
+        });
+        mainView.getIssuePanel().addResetButtonListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                resetIssues();
+            }
+        });
+        mainView.getIssuePanel().setIssueDetailListener(new IssuePanel.IssueDetailListener() {
+            @Override
+            public void onIssueTitleClicked(String issueTitle) {
+                showIssueDetail(issueTitle);
+            }
+        });
+
+        mainView.setVisible(true);
+    }
+
+    public static Controller getInstance() {
+        if (instance == null) {
+            instance = new Controller();
+        }
+        return instance;
+    }
+
+    public void showMainView() {
+        User currentUser = sessionService.getCurrentSession().getCurrentUser();
+        if (currentUser != null) {
+            mainView.setLoggedIn(true,currentUser.getUsername());
+        } else {
+            mainView.setLoggedIn(false,"");
+        }
+        displayUserProjects(currentUser);
+        mainView.setVisible(true);
+    }
+
+    public void showLoginView() {
+        loginView.setVisible(true);
+    }
+
+    public void showSignInView() {
+        signInView.setVisible(true);
+    }
+
+    public void attemptLogin(String username, String password) {
+        User user = userService.authenticateUser(username, password);
+        if (user != null) {
+            sessionService.setCurrentUser(user);
+            loginView.dispose();
+            showMainView();
+        } else {
+            loginView.showErrorMessage("Invalid username or password.");
+        }
+    }
+
+    public void attemptSignIn(String username, String password, String email) {
+        try {
+            userService.addNewUser(username, password, email);
+            signInView.showSuccessMessage();
+        } catch (Exception e) {
+            signInView.showErrorMessage(e.getMessage());
+        }
+    }
+
+    public void logout() {
+        sessionService.setCurrentUser(null);
+        mainView.showView("Projects");
+        showMainView();
+    }
+
+    private void displayUserProjects(User user) {
+        List<Project> projects = projectService.listProject();
+        List<Project> accessibleProjects = new ArrayList<>();
+        for (Project project : projects) {
+            if (projectService.hasUser(project, user)) {
+                accessibleProjects.add(project);
+            }
+        }
+        mainView.setProjects(accessibleProjects, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String projectId = e.getActionCommand();
+                Project currentProject = projectService.findProjectById(Long.parseLong(projectId));
+                sessionService.setCurrentProject(currentProject);
+                displayProjectIssues(currentProject);
+                // Handle project click to show ProjectMainView (implementation needed)
+                //System.out.println("Project ID clicked: " + projectId);
+            }
+        });
+    }
+
+    private void filterIssues() {
+        Project currentProject = sessionService.getCurrentSession().getCurrentProject();
+        if (currentProject == null) {
+            return;
+        }
+
+        IssueStatus selectedStatus = mainView.getIssuePanel().getSelectedStatus();
+        IssuePriority selectedPriority = mainView.getIssuePanel().getSelectedPriority();
+        String selectedAssignee = mainView.getIssuePanel().getSelectedAssignee();
+        String selectedFixer = mainView.getIssuePanel().getSelectedFixer();
+
+        SearchCriteria criteria = new SearchCriteria();
+        criteria.setStatus(selectedStatus);
+        criteria.setPriority(selectedPriority);
+        criteria.setAssignee(null);
+        criteria.setFixer(null);
+        if (selectedAssignee != null) {
+            User assignee = userService.findByUsername(selectedAssignee);
+            criteria.setAssignee(assignee);
+        }
+        if (selectedFixer != null) {
+            User fixer = userService.findByUsername(selectedFixer);
+            criteria.setFixer(fixer);
+        }
+
+        List<Issue> filteredIssues = issueService.searchIssues(currentProject, criteria);
+        mainView.getIssuePanel().setIssues(filteredIssues);
+    }
+
+    private void resetIssues() {
+        Project currentProject = sessionService.getCurrentSession().getCurrentProject();
+        if (currentProject != null) {
+            displayProjectIssues(currentProject);
+        }
+    }
+    private void showIssueDetail(String issueTitle) {
+        Project currentProject = sessionService.getCurrentSession().getCurrentProject();
+        if (currentProject == null) {
+            return;
+        }
+
+        List<Issue> issues = issueService.searchIssues(currentProject, null);
+        for (Issue issue : issues) {
+            if (issue.getTitle().equals(issueTitle)) {
+                sessionService.setCurrentIssue(issue);
+                mainView.getIssueDetailPanel().setIssue(issue);
+                mainView.showView("IssueDetail");
+                break;
+            }
+        }
+    }
+    private void createNewProject() {
+        String projectName = JOptionPane.showInputDialog(mainView, "Enter project name:");
+        String projectDescription = JOptionPane.showInputDialog(mainView, "Enter project description:");
+
+        if (projectName != null && projectDescription != null && !projectName.trim().isEmpty() && !projectDescription.trim().isEmpty()) {
+            User currentUser = sessionService.getCurrentSession().getCurrentUser();
+            if (currentUser != null) {
+                Project newProject = projectService.createProject(currentUser, projectName, projectDescription);
+                if (newProject != null) {
+                    showMainView();  // Refresh the main view to show the new project
+                } else {
+                    JOptionPane.showMessageDialog(mainView, "Failed to create project.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(mainView, "You must be logged in to create a project.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    private void displayProjectIssues(Project project) {
+        List<Issue> issues = issueService.searchIssues(sessionService.getCurrentSession().getCurrentProject(),null);
+        mainView.setIssues(issues);
+    }
+
+    public static void main(String[] args) {
+        Controller.getInstance().showMainView();
+    }
+}
+package com.se14.domain;
+
+import java.util.Date;
+
+public class Comment {
+    private String commentTitle;
+    private String text;
+    private Date timestamp;
+    private User author;
+    private long id;
+
+    @Override
+    public String toString()
+    {
+        return this.commentTitle + ":" +this.text;
+    }
+    // Default constructor
+    public Comment() {
+    }
+
+    // Parameterized constructor
+    public Comment(String commentTitle, String text, Date timestamp, User author) {
+        this.commentTitle = commentTitle;
+        this.text = text;
+        this.timestamp = timestamp;
+        this.author = author;
+    }
+
+    // Getter and setter for commentId
+    public String getCommentTitle() {
+        return commentTitle;
+    }
+
+    public void setCommentTitle(String commentTitle) {
+        this.commentTitle = commentTitle;
+    }
+
+    //DB 구현을 위해 CommentID 따로 추가
+    public void setID(long id){this.id = id;}
+
+    public long getID(){ return this.id;}
+
+
+    // Getter and setter for text
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    // Getter and setter for timestamp
+    public Date getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Date timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    // Getter and setter for author
+    public User getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(User author) {
+        this.author = author;
+    }
+
+
+}
+package com.se14.domain;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+
+public class Issue {
+    private String title;
+    private String description;
+    private IssueStatus status;
+    private IssuePriority priority;
+    private Date reportedDate;
+    private User reporter;
+    private User fixer;
+    private User assignee;
+    private List<Comment> comments;
+    private long id;
+
+
+    @Override
+    public String toString() {
+        return this.title;
+    }
+
+    public static void main(String[] args) {
+        //Issue i = new Issue();
+        //i.setTitle("grfe");
+        System.out.println(new Date());
+    }
+    // Default constructor
+    public Issue() {
+       this.comments = new ArrayList<Comment>();
+    }
+    public Issue( User reporter, String title, String description, IssuePriority priority) { // 수정해도 좋을 것 같아요. report Issue 위해서 만들었습니다.
+        this.reporter = reporter;
+        this.title = title;
+        this.description = description;
+        this.priority= priority;
+        this.status = IssueStatus.NEW;
+        this.reportedDate = new Date();
+        this.comments = null;
+
+    }
+
+    // Parameterized constructor
+    public Issue(String title, String description, IssueStatus status, IssuePriority priority, Date reportedDate, User reporter, User fixer, User assignee, List<Comment> comments) {
+        this.title = title;
+        this.description = description;
+        this.status = status;
+        this.priority = priority;
+        this.reportedDate = reportedDate;
+        this.reporter = reporter;
+        this.fixer = fixer;
+        this.assignee = assignee;
+        this.comments = comments;
+
+    }
+
+
+    // Getter and setter for title
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    // Getter and setter for description
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    // Getter and setter for status
+    public IssueStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(IssueStatus status) {
+        this.status = status;
+    }
+
+    // Getter and setter for priority
+    public IssuePriority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(IssuePriority priority) {
+        this.priority = priority;
+    }
+
+    // Getter and setter for reportedDate
+    public Date getReportedDate() {
+        return reportedDate;
+    }
+
+    public void setReportedDate(Date reportedDate) {
+        this.reportedDate = reportedDate;
+    }
+
+    // Getter and setter for reporter
+    public User getReporter() {
+        return reporter;
+    }
+
+    public void setReporter(User reporter) {
+        this.reporter = reporter;
+    }
+
+    // Getter and setter for fixer
+    public User getFixer() {
+        return fixer;
+    }
+
+    public void setFixer(User fixer) {
+        this.fixer = fixer;
+    }
+
+    // Getter and setter for assignee
+    public User getAssignee() {
+        return assignee;
+    }
+
+    public void setAssignee(User assignee) {
+        this.assignee = assignee;
+    }
+
+    // Getter and setter for comments
+    public List<Comment> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<Comment> comments) {
+        this.comments = comments;
+    }
+
+    //setter and getter for issue id for DB management
+    public void setIssueId(long id) { this.id = id;
+    }
+
+    public long getIssueId() { return id; }
+}
+package com.se14.domain;
+
+public enum IssuePriority {
+    BLOCKER, CRITICAL, MAJOR, MINOR, TRIVIAL
+}package com.se14.domain;
+
+public enum IssueStatus {
+    NEW, ASSIGNED, FIXED ,RESOLVED, CLOSED, REOPENED
+}package com.se14.domain;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class Project {
+    private Integer projectId;
+    private String projectTitle;
+    private String projectDescription;
+    private Map<User, List<UserRole>> members;
+    private List<Issue> issues;
+
+    // Default constructor
+    public Project() {
+        members = new HashMap<User,List<UserRole>>();
+        issues = new ArrayList<Issue>();
+
+    }
+    @Override
+    public String toString()
+    {
+        return String.valueOf(this.projectId);
+    }
+
+
+    // Parameterized constructor
+    public Project(Integer projectId, String projectTitle, String projectDescription, Map<User, List<UserRole>> members, List<Issue> issues) {
+        this.projectId = projectId;
+        this.projectTitle = projectTitle;
+        this.projectDescription = projectDescription;
+        this.members = members;
+        this.issues = issues;
+    }
+
+    // Getter and setter for projectId
+    public Integer getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(Integer projectId) {
+        this.projectId = projectId;
+    }
+
+    // Getter and setter for projectName
+    public String getProjectTitle() {
+        return projectTitle;
+    }
+
+    public void setProjectTitle(String projectTitle) {
+        this.projectTitle = projectTitle;
+    }
+
+    // Getter and setter for members
+    public Map<User, List<UserRole>> getMembers() {
+        return members;
+    }
+
+    public void setMembers(Map<User, List<UserRole>> members) {
+        this.members = members;
+    }
+
+    // Getter and setter for issues
+    public List<Issue> getIssues() {
+        return issues;
+    }
+
+    public void setIssues(List<Issue> issues) {
+        this.issues = issues;
+    }
+
+    public String getProjectDescription() {
+        return projectDescription;
+    }
+
+    public void setProjectDescription(String projectDescription) {
+        this.projectDescription = projectDescription;
+    }
+}
+package com.se14.domain;
+
+import java.util.List;
+
+public class User {
+    private Integer userId;
+    private String username;
+    private String password;
+    private String email;
+    //private List<Project> projects;
+
+    // Default constructor
+    public User() {
+    }
+    public User(String password) {
+        this.password = password;
+    }
+    @Override
+    public String toString()
+    {
+        return this.username;
+    }
+
+    // Parameterized constructor
+    public User(Integer userId,String username, String password, String email) { //projects에 유저가 참여하고 있는 모든 project 만들어서 줘야합니다. -> 필요없을 것 같아 제외했습니다.
+        this.userId =userId;
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        //this.projects = projects;
+    }
+
+    // Getter and setter for username
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    // Getter and setter for password
+    public String getPassword() {
+        return password;
+    }
+    //비밀번호 setter는 없습니다. 불안정적일 것 같네요. 
+    // Getter and setter for email
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    // Getter and setter for projects
+    /*
+    public List<Project> getProjects() {
+        return projects;
+    }
+
+    public void setProjects(List<Project> projects) {
+        this.projects = projects;
+    }
+*/
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Integer userId) {
+        this.userId = userId;
+    }
+}
+package com.se14.domain;
+
+public enum UserRole {
+    ADMIN, PROJECT_LEAD, DEVELOPER, TESTER
+}package com.se14.domain;
+
+public class UserSession {
+    private User currentUser;
+    private Project currentProject;
+    private Issue currentIssue;
+
+    // Default constructor
+    public UserSession() {
+    }
+    @Override
+    public String toString()
+    {
+        return "User: "+this.currentUser+", Project: "+this.currentProject+", Issue: "+this.currentIssue;
+    }
+
+    // Parameterized constructor
+    public UserSession(User currentUser, Project currentProject, Issue currentIssue) {
+        this.currentUser = currentUser;
+        this.currentProject = currentProject;
+        this.currentIssue = currentIssue;
+    }
+
+    // Getter and setter for currentUser
+    public User getCurrentUser() {
+        return currentUser;
+    }
+
+    public void setCurrentUser(User currentUser) {
+        this.currentUser = currentUser;
+    }
+
+    // Getter and setter for currentProject
+    public Project getCurrentProject() {
+        return currentProject;
+    }
+
+    public void setCurrentProject(Project currentProject) {
+        this.currentProject = currentProject;
+    }
+
+    // Getter and setter for currentIssue
+    public Issue getCurrentIssue() {
+        return currentIssue;
+    }
+
+    public void setCurrentIssue(Issue currentIssue) {
+        this.currentIssue = currentIssue;
+    }
+}
+package com.se14;
+
+import com.se14.controller.Controller;
+
+public class Main {
+
+    public static void main(String[] args) {
+        // 애플리케이션 시작
+        Controller.getInstance().showMainView();
+
+    }
+}
+package com.se14.repository;
+
+import com.se14.domain.Comment;
+import com.se14.domain.Issue;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface CommentRepository {
+    Comment save(Comment comment,Issue issue);
+    Optional<Comment> findById(long id);
+    List<Comment> findByIssue(Issue issue);
+}
+package com.se14.repository.db_impl;
+
+import com.se14.domain.Comment;
+import com.se14.domain.Issue;
+import com.se14.repository.CommentRepository;
+
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+public class CommentDB implements CommentRepository {
+    private Connection connection;
+
+    public CommentDB(Connection connection) {
+        this.connection = connection;
+    }
+
+    @Override
+    public Comment save(Comment comment, Issue issue) {
+        String sql = "INSERT INTO comments (title, text, timestamp, issue_id, author_id) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, comment.getCommentTitle());
+            statement.setString(2, comment.getText());
+            statement.setTimestamp(3, new Timestamp(comment.getTimestamp().getTime()));
+            statement.setLong(4, issue.getIssueId());
+            statement.setInt(5, comment.getAuthor().getUserId());
+            statement.executeUpdate();
+
+            ResultSet generatedKeys = statement.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                comment.setID(generatedKeys.getLong(1));
+                return comment;
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public Optional<Comment> findById(long id) {
+        String sql = "SELECT * FROM comments WHERE comment_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return Optional.of(mapResultSetToComment(resultSet));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public List<Comment> findByIssue(Issue issue) {
+        List<Comment> comments = new ArrayList<>();
+        String sql = "SELECT * FROM comments WHERE issue_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, issue.getIssueId());
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                comments.add(mapResultSetToComment(resultSet));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return comments;
+    }
+
+    private Comment mapResultSetToComment(ResultSet resultSet) throws SQLException {
+        Comment comment = new Comment();
+        comment.setID(resultSet.getLong("comment_id"));
+        comment.setCommentTitle(resultSet.getString("title"));
+        comment.setText(resultSet.getString("text"));
+        comment.setTimestamp(resultSet.getTimestamp("timestamp"));
+
+        return comment;
+    }
+}
+package com.se14.repository.db_impl;
+
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class DatabaseConnection {
+    private static final String URL = "jdbc:mysql://localhost:3306/se14";
+    private static final String USER = "root";
+    private static final String PASSWORD = "rkdshrua6428!";
+
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+}package com.se14.repository.db_impl;
+
+import com.se14.repository.CommentRepository;
+import com.se14.repository.IssueRepository;
+import com.se14.repository.ProjectRepository;
+import com.se14.repository.UserRepository;
+import com.se14.repository.db_impl.DatabaseConnection;
+import java.sql.Connection;
+import java.sql.SQLException;
+
+
+public class DBInitializer {
+
+    public static DatabaseObjects initializeDatabase() {
+        try {
+            // Get connection from DatabaseConnection class
+            Connection connection = DatabaseConnection.getConnection();
+
+            // Initialize repository implementations with the connection
+            UserDB userDB = new UserDB(connection);
+            ProjectDB projectDB = new ProjectDB(connection);
+            IssueDB issueDB = new IssueDB(connection);
+            CommentDB commentDB = new CommentDB(connection);
+
+            // Return the initialized database objects
+            return new DatabaseObjects(userDB, projectDB, issueDB, commentDB);
+        } catch (SQLException ex) {
+            System.err.println("Failed to initialize database: " + ex.getMessage());
+            return null;
+        }
+    }
+
+
+    public static class DatabaseObjects {
+        private final UserDB userDB;
+        private final ProjectDB projectDB;
+        private final IssueDB issueDB;
+        private final CommentDB commentDB;
+
+        public DatabaseObjects(UserDB userRepository, ProjectDB projectRepository,
+                               IssueDB issueRepository, CommentDB commentRepository) {
+            this.userDB = userRepository;
+            this.projectDB = projectRepository;
+            this.issueDB = issueRepository;
+            this.commentDB = commentRepository;
+        }
+
+        public UserDB getUserDB() {
+            return userDB;
+        }
+
+        public ProjectDB getProjectDB() {
+            return projectDB;
+        }
+
+        public IssueDB getIssueDB() {
+            return issueDB;
+        }
+
+        public CommentDB getCommentDB() {
+            return commentDB;
+        }
+    }
+}
+package com.se14.repository.db_impl;
+
+import com.se14.domain.Comment;
+import com.se14.domain.Issue;
+import com.se14.domain.Project;
+import com.se14.domain.User;
+import com.se14.repository.IssueRepository;
+import com.se14.domain.IssueStatus;
+import com.se14.domain.IssuePriority;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+public class IssueDB implements IssueRepository {
+    private Connection connection;
+
+    // Constructor to initialize the database connection
+    public IssueDB(Connection connection) {
+        this.connection = connection;
+    }
+
+    @Override
+    public Issue save(Issue issue, Project project) {
+        String sql = "INSERT INTO issues (title, description, status, priority, reported_date, reporter_id, fixer_id, assignee_id, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, issue.getTitle());
+            statement.setString(2, issue.getDescription());
+            statement.setString(3, issue.getStatus().name());
+            statement.setString(4, issue.getPriority().name());
+            statement.setDate(5, new java.sql.Date(issue.getReportedDate().getTime()));
+            statement.setInt(6, issue.getReporter().getUserId());
+            statement.setInt(7, issue.getFixer().getUserId());
+            statement.setInt(8, issue.getAssignee().getUserId());
+            statement.setString(9, String.valueOf(project.getProjectId()));
+            statement.executeUpdate();
+
+            ResultSet generatedKeys = statement.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                issue.setIssueId(generatedKeys.getLong(1));
+                return issue;
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public Optional<Issue> findById(long id) {
+        String sql = "SELECT * FROM issues WHERE issue_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return Optional.of(mapResultSetToIssue(resultSet));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public List<Issue> findByProject(Project project) {
+        List<Issue> issues = new ArrayList<>();
+        String sql = "SELECT * FROM issues WHERE project_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, String.valueOf(project.getProjectId()));
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                issues.add(mapResultSetToIssue(resultSet));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return issues;
+    }
+
+
+
+
+    // Helper method to map ResultSet to Issue object
+    private Issue mapResultSetToIssue(ResultSet resultSet) throws SQLException {
+        User reporter = new User(); reporter.setUserId(resultSet.getInt("reporter_id"));
+        User fixer = new User(); fixer.setUserId(resultSet.getInt("fixer_id"));
+        User assignee = new User(); assignee.setUserId(resultSet.getInt("assignee_id"));
+
+        return new Issue(
+
+                resultSet.getString("title"),
+                resultSet.getString("description"),
+                IssueStatus.valueOf(resultSet.getString("status")),
+                IssuePriority.valueOf(resultSet.getString("priority")),
+                resultSet.getDate("reported_date"),
+                reporter,
+                fixer,
+                assignee,
+                new ArrayList<>() // comments will be fetched separately
+        );
+    }
+}
+package com.se14.repository.db_impl;
+
+import com.se14.domain.Issue;
+import com.se14.domain.User;
+import com.se14.repository.IssueRepository;
+import com.se14.repository.db_impl.DBInitializer;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Optional;
+
+public class Main {
+    public static void main(String[] args) {
+        DBInitializer.DatabaseObjects Databases = DBInitializer.initializeDatabase();
+
+        IssueDB issueDB = Databases.getIssueDB();
+
+        Optional<Issue> issue = issueDB.findById(123);
+
+
+        System.out.println("successful");
+    }
+}
+package com.se14.repository.db_impl;
+
+import com.se14.domain.Project;
+import com.se14.domain.User;
+import com.se14.domain.UserRole;
+import com.se14.domain.Issue;
+import com.se14.domain.IssueStatus;
+import com.se14.domain.IssuePriority;
+import com.se14.domain.Comment;
+import com.se14.repository.ProjectRepository;
+import java.util.Date;
+
+import java.sql.*;
+import java.util.*;
+
+public class ProjectDB implements ProjectRepository {
+    private Connection connection;
+
+    // Constructor to initialize the database connection
+    public ProjectDB(Connection connection) {
+        this.connection = connection;
+    }
+
+    @Override
+    public Project save(Project project) {
+        String sql = "INSERT INTO projects (project_id, title, description) VALUES (?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, project.getProjectId().toString());
+            statement.setString(2, project.getProjectTitle());
+            statement.setString(3, project.getProjectDescription());
+            statement.executeUpdate();
+
+            saveProjectMembers(project);
+            saveProjectIssues(project);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return project;
+    }
+
+    private void saveProjectMembers(Project project) throws SQLException {
+        String sql = "INSERT INTO project_members (project_id, user_id, user_role) VALUES (?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            for (Map.Entry<User, List<UserRole>> entry : project.getMembers().entrySet()) {
+                User user = entry.getKey();
+                for (UserRole role : entry.getValue()) {
+                    statement.setString(1, project.getProjectId().toString());
+                    statement.setInt(2, user.getUserId());
+                    statement.setString(3, role.toString());
+                    statement.addBatch();
+                }
+            }
+            statement.executeBatch();
+        }
+    }
+
+    private void saveProjectIssues(Project project) throws SQLException {
+        String sql = "INSERT INTO issues (title, description, status, priority, date, project_id, reporter_id, fixer_id, assignee_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            for (Issue issue : project.getIssues()) {
+                statement.setString(1, issue.getTitle());
+                statement.setString(2, issue.getDescription());
+                statement.setString(3, issue.getStatus().toString());
+                statement.setString(4, issue.getPriority().toString());
+                statement.setDate(5, new java.sql.Date(issue.getReportedDate().getTime()));
+                statement.setString(6, project.getProjectId().toString());
+                statement.setInt(7, issue.getReporter().getUserId());
+                statement.setInt(8, issue.getFixer() != null ? issue.getFixer().getUserId() : null);
+                statement.setInt(9, issue.getAssignee() != null ? issue.getAssignee().getUserId() : null);
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
+    @Override
+    public Optional<Project> findById(long id) {
+        String sql = "SELECT * FROM projects WHERE project_id = ?";
+        Project project = null;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                project = new Project();
+                project.setProjectId(resultSet.getInt("project_id"));
+                project.setProjectTitle(resultSet.getString("title"));
+                project.setProjectDescription(resultSet.getString("description"));
+                project.setMembers(getProjectMembers(project.getProjectId()));
+                project.setIssues(getProjectIssues(project.getProjectId()));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return Optional.ofNullable(project);
+    }
+
+    private Map<User, List<UserRole>> getProjectMembers(Integer projectId) throws SQLException {
+        String sql = "SELECT * FROM project_members WHERE project_id = ?";
+        Map<User, List<UserRole>> members = new HashMap<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, projectId);
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                User user = new User(); // Assuming you have a User class with proper fields
+                user.setUserId(resultSet.getInt("user_id"));
+                UserRole role = UserRole.valueOf(resultSet.getString("user_role"));
+                members.computeIfAbsent(user, k -> new ArrayList<>()).add(role);
+            }
+        }
+        return members;
+    }
+
+
+    private List<Issue> getProjectIssues(Integer projectId) throws SQLException {
+        String sql = "SELECT * FROM issues WHERE project_id = ?";
+        List<Issue> issues = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, projectId);
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                Issue issue = new Issue(); // Assuming you have an Issue class with proper fields
+                //issue.setIssueId(resultSet.getInt("issue_id"));
+                issue.setTitle(resultSet.getString("title"));
+                issue.setDescription(resultSet.getString("description"));
+                issue.setStatus(IssueStatus.valueOf(resultSet.getString("status")));
+                issue.setPriority(IssuePriority.valueOf(resultSet.getString("priority")));
+                issue.setReportedDate(resultSet.getDate("date"));
+                // Set reporter, fixer, and assignee using similar logic
+                issues.add(issue);
+            }
+        }
+        return issues;
+    }
+
+    @Override
+    public List<Project> searchByTitle(String title) {
+        String sql = "SELECT * FROM projects WHERE title LIKE ?";
+        List<Project> projects = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, "%" + title + "%");
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                Project project = new Project();
+                project.setProjectId(resultSet.getInt("project_id"));
+                project.setProjectTitle(resultSet.getString("title"));
+                project.setProjectDescription(resultSet.getString("description"));
+                projects.add(project);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return projects;
+    }
+
+    @Override
+    public List<Project> findAll() {
+        String sql = "SELECT * FROM projects";
+        List<Project> projects = new ArrayList<>();
+        try (Statement statement = connection.createStatement()) {
+            ResultSet resultSet = statement.executeQuery(sql);
+            while (resultSet.next()) {
+                Project project = new Project();
+                project.setProjectId(resultSet.getInt("project_id"));
+                project.setProjectTitle(resultSet.getString("title"));
+                project.setProjectDescription(resultSet.getString("description"));
+                projects.add(project);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return projects;
+    }
+}
+package com.se14.repository.db_impl;
+
+import java.util.UUID;
+
+public class UniqueIDGenerator {
+    public static int generateUniqueId() {
+        UUID uuid = UUID.randomUUID();
+        // Extracting the hash code of the UUID as an integer
+        int id = uuid.hashCode();
+        // Handling the possibility of negative hash codes
+        if (id == Integer.MIN_VALUE) {
+            id = 0; // Avoid potential issues with negative IDs
+        } else {
+            id = Math.abs(id); // Make sure ID is positive
+        }
+        return id;
+    }
+}
+package com.se14.repository.db_impl;
+
+import com.se14.domain.User;
+import com.se14.repository.UserRepository;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+public class UserDB implements UserRepository {
+    private Connection connection;
+
+    // Constructor to initialize the database connection
+    public UserDB(Connection connection) {
+        this.connection = connection;
+    }
+
+    @Override
+    public User save(User user) {
+        String sql = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, user.getUsername());
+            statement.setString(2, user.getPassword());
+            statement.setString(3, user.getEmail());
+            statement.executeUpdate();
+
+            ResultSet generatedKeys = statement.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                user.setUserId(generatedKeys.getInt(1));
+                return user;
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public Optional<User> findById(long id) {
+        String sql = "SELECT * FROM users WHERE user_id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return Optional.of(mapResultSetToUser(resultSet));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public User findByUsername(String username) {
+        String sql = "SELECT * FROM users WHERE username = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, username);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return mapResultSetToUser(resultSet);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public List<User> findAll() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT * FROM users";
+        try (Statement statement = connection.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
+            while (resultSet.next()) {
+                users.add(mapResultSetToUser(resultSet));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return users;
+    }
+
+    // Helper method to map ResultSet to User object
+    private User mapResultSetToUser(ResultSet resultSet) throws SQLException {
+        return new User(
+                resultSet.getInt("user_id"),
+                resultSet.getString("username"),
+                resultSet.getString("password"),
+                resultSet.getString("email")
+        );
+    }
+}
+package com.se14.repository.fake;
+
+import com.se14.domain.Comment;
+import com.se14.domain.Issue;
+import com.se14.repository.CommentRepository;
+
+import java.util.*;
+
+public class CommentRepositoryFake implements CommentRepository {
+
+    private final Map<Long, Comment> comments = new HashMap<>();
+    private long currentId = 1;
+
+    @Override
+    public Comment save(Comment comment, Issue issue) {
+        comments.put(currentId++, comment);
+        issue.getComments().add(comment);
+        return comment;
+    }
+
+    @Override
+    public Optional<Comment> findById(long id) {
+        return Optional.ofNullable(comments.get(id));
+    }
+
+    @Override
+    public List<Comment> findByIssue(Issue issue) {
+        return issue.getComments();
+    }
+}
+package com.se14.repository.fake;
+
+public class FakeRepositoryInitializer {
+
+    public static void main(String[] args) {
+        // Create instances of the fake repositories
+        CommentRepositoryFake commentRepository = new CommentRepositoryFake();
+        UserRepositoryFake userRepository = new UserRepositoryFake();
+        ProjectRepositoryFake projectRepository = new ProjectRepositoryFake(userRepository);
+        IssueRepositoryFake issueRepository = new IssueRepositoryFake(projectRepository,commentRepository);
+
+        // Debugging output (Optional)
+        System.out.println("Repositories have been initialized:");
+        //System.out.println("User Repository Size: " + userRepository.findAll().size());
+        System.out.println("Project Repository Size: " + projectRepository.findAll().size());
+        System.out.println("Issue Repository Size: " + issueRepository.findByProject(projectRepository.findById(1L).get()).size());
+        //System.out.println("Comments for First Issue in Project 1: " + commentRepository.findByIssue(issueRepository.findByProject(projectRepository.findById(1L).get()).get(0)).size());
+
+        // The output will help confirm that the repositories are populated correctly
+        // Additional debugging can be done by inspecting objects in a debugger
+    }
+}
+package com.se14.repository.fake;
+
+import com.se14.domain.*;
+import com.se14.domain.IssueStatus;
+import com.se14.domain.IssuePriority;
+import com.se14.repository.CommentRepository;
+import com.se14.repository.IssueRepository;
+import com.se14.repository.ProjectRepository;
+
+import java.util.*;
+
+public class IssueRepositoryFake implements IssueRepository {
+
+    private final Map<Long, Issue> issues = new HashMap<>();
+    private long currentId = 1;
+    public ProjectRepository projectRepositoryFake;
+    public CommentRepository commentRepositoryFake;
+
+    public IssueRepositoryFake(ProjectRepository projectRepositoryFake,CommentRepository commentRepositoryFake) {
+        this.projectRepositoryFake = projectRepositoryFake;
+        this.commentRepositoryFake =commentRepositoryFake;
+        Project project1 = projectRepositoryFake.findById(1).orElse(null);
+
+        if (project1 != null) {
+            Map<User, List<UserRole>> members = project1.getMembers();
+            List<User> reporters = new ArrayList<>();
+            List<User> developers = new ArrayList<>();
+            List<User> fixers = new ArrayList<>();
+
+            // Collect users based on roles
+            members.forEach((user, roles) -> {
+                if (roles.contains(UserRole.TESTER)) {
+                    reporters.add(user);
+                }
+                if (roles.contains(UserRole.DEVELOPER)) {
+                    developers.add(user);
+                    fixers.add(user);  // Assuming developers can also be fixers
+                }
+            });
+
+            Calendar cal = Calendar.getInstance();
+            Random rand = new Random();
+
+            // Create NEW issues
+            for (int i = 0; i < 5; i++) {
+                User reporter = reporters.get(i);
+                Issue issue = createIssue("NEW", i + 1, reporter, IssueStatus.NEW, cal, 18 + i, project1);
+                project1.getIssues().add(issue);
+            }
+
+            // Create ASSIGNED issues
+            for (int i = 0; i < 5; i++) {
+                User reporter = reporters.get(i);
+                User assignee = developers.get(i);
+                Issue issue = createIssue("ASSIGNED", i + 1*5, reporter, IssueStatus.ASSIGNED, cal, 13 + i, project1);
+                issue.setAssignee(assignee);
+                project1.getIssues().add(issue);
+            }
+
+            // Create FIXED issues
+            for (int i = 0; i < 5; i++) {
+                User reporter = reporters.get(i);
+                User fixer = fixers.get(i);
+                User assignee = developers.get(i);
+                Issue issue = createIssue("FIXED", i + 1*10, reporter, IssueStatus.FIXED, cal, 7 + i, project1);
+                issue.setFixer(fixer);
+                issue.setAssignee(assignee);
+                project1.getIssues().add(issue);
+            }
+        }
+    }
+
+    private Issue createIssue(String status, int num, User reporter, IssueStatus issueStatus, Calendar cal, int dayOffset, Project project) {
+        Issue issue = new Issue();
+        issue.setTitle("Issue " + status + " " + num);
+        issue.setDescription("Description for Issue " + status + " " + num);
+        issue.setStatus(issueStatus);
+        issue.setPriority(IssuePriority.MAJOR);
+        cal.set(2024, Calendar.MAY, dayOffset, 0, 0, 0);
+        issue.setReportedDate(cal.getTime());
+        issue.setReporter(reporter);
+        if(issueStatus == IssueStatus.FIXED) {
+            addComment(issue, status, num, reporter,issue.getFixer());
+        }
+        else{
+            addComment(issue, status, num, reporter,issue.getFixer());
+        }
+
+        save(issue, project);
+        return issue;
+    }
+
+    private void addComment(Issue issue, String status, int num, User commenter, User fixer) {
+        Comment comment = new Comment();
+        comment.setCommentTitle("Report issue " + num+" ");
+        comment.setText("Report issue " + num+" ");
+        comment.setTimestamp(new Date());
+        comment.setAuthor(commenter);
+        commentRepositoryFake.save(comment,issue);
+
+        if (status.equals("FIXED")) {
+            Comment fixComment = new Comment();
+            fixComment.setCommentTitle("Fix issue " + num);
+            fixComment.setText("Fix issue " + num);
+            fixComment.setTimestamp(new Date());
+            fixComment.setAuthor(fixer);
+            //issue.setComments(Arrays.asList(comment, fixComment));
+            commentRepositoryFake.save(fixComment,issue);
+        } else {
+            //issue.setComments(Collections.singletonList(comment));
+        }
+    }
+
+    @Override
+    public Issue save(Issue issue, Project project) {
+        issue.setTitle(issue.getTitle() + " - Project " + project.getProjectTitle());
+        issues.put(currentId++, issue);
+        return issue;
+    }
+
+    @Override
+    public Optional<Issue> findById(long id) {
+        return Optional.ofNullable(issues.get(id));
+    }
+
+    @Override
+    public List<Issue> findByProject(Project project) {
+        return project.getIssues();
+    }
+}
+package com.se14.repository.fake;
+
+import com.se14.domain.Project;
+import com.se14.domain.User;
+import com.se14.domain.UserRole;
+import com.se14.repository.ProjectRepository;
+import com.se14.repository.UserRepository;
+
+import java.util.*;
+
+public class ProjectRepositoryFake implements ProjectRepository {
+
+    private final Map<Long, Project> projects = new HashMap<>();
+    public UserRepository userRepositoryFake;
+
+    public ProjectRepositoryFake(UserRepository userRepositoryFake) {
+        // Create 3 projects with IDs 1, 2, and 3
+        for (long i = 1; i <= 3; i++) {
+            Project project = new Project();
+            project.setProjectId((int) i);
+            project.setProjectTitle("Project " + i);
+            project.setProjectDescription("Description for Project " + i);
+            projects.put(i, project);
+        }
+        int projectId = 1;
+        this.userRepositoryFake=userRepositoryFake;
+        // Set up members for Project 1
+        Project project1 = projects.get((long)projectId);
+        if (project1 != null) {
+            for (long i = 1; i <= 9; i++) {
+                User user = userRepositoryFake.findById(i).orElse(null);
+                if (user != null) {
+                    List<UserRole> roles = new ArrayList<>();
+                    if (i == 1) {
+                        roles.add(UserRole.ADMIN);
+                        roles.add(UserRole.PROJECT_LEAD);
+                        roles.add(UserRole.DEVELOPER);
+                        roles.add(UserRole.TESTER);
+                    } else {
+                        if ((i & 1) != 0) roles.add(UserRole.PROJECT_LEAD);
+                        if ((i & 2) != 0) roles.add(UserRole.DEVELOPER);
+                        if ((i & 4) != 0) roles.add(UserRole.TESTER);
+                    }
+                    project1.getMembers().put(user, roles);
+                }
+            }
+        }
+    }
+
+    @Override
+    public Project save(Project project) {
+        if (project.getProjectId() == null) {
+            long newId = projects.keySet().stream().mapToLong(Long::longValue).max().orElse(0) + 1;
+            project.setProjectId((int) newId);
+        }
+        projects.put(project.getProjectId().longValue(), project);
+        return project;
+    }
+
+    @Override
+    public Optional<Project> findById(long id) {
+        return Optional.ofNullable(projects.get(id));
+    }
+
+    @Override
+    public List<Project> searchByTitle(String title) {
+        List<Project> result = new ArrayList<>();
+        for (Project project : projects.values()) {
+            if (project.getProjectTitle().contains(title)) {
+                result.add(project);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public List<Project> findAll() {
+        return new ArrayList<>(projects.values());
+    }
+}
+package com.se14.repository.fake;
+
+import com.se14.domain.User;
+import com.se14.repository.UserRepository;
+
+import java.util.*;
+
+public class UserRepositoryFake implements UserRepository {
+
+    private final Map<Long, User> users = new HashMap<>();
+
+    public UserRepositoryFake() {
+        for (long i = 1; i <= 9; i++) {
+            User user = new User("password"+i);
+            user.setUserId((int) i);
+            user.setUsername("user" + i);
+            user.setEmail("user" + i + "@example.com");
+            users.put(i, user);
+        }
+    }
+
+    @Override
+    public User save(User user) {
+        if(user.getUserId()==null) {
+            long newId = users.keySet().stream().mapToLong(Long::longValue).max().orElse(0) + 1;
+            user.setUserId((int) newId);
+        }
+        users.put(user.getUserId().longValue(), user);
+        return user;
+    }
+
+    @Override
+    public Optional<User> findById(long id) {
+        return Optional.ofNullable(users.get(id));
+    }
+
+    @Override
+    public User findByUsername(String username) {
+        return users.values().stream()
+                .filter(user -> user.getUsername().equals(username))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public List<User> findAll() {
+        return (List<User>) users.values();
+    }
+}
+package com.se14.repository;
+
+import com.se14.domain.Issue;
+import com.se14.domain.Project;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface IssueRepository {
+    Issue save(Issue issue,Project project);
+    Optional<Issue> findById(long id);
+    List<Issue> findByProject(Project project);
+}
+package com.se14.repository;
+
+import com.se14.domain.Project;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface ProjectRepository {
+    Project save(Project project);
+    Optional<Project> findById(long id);
+    List<Project> searchByTitle(String title); // returns all projects have title as substring
+    List<Project> findAll();
+}
+package com.se14.repository;
+
+import com.se14.domain.User;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface UserRepository {
+    User save(User user);
+    Optional<User> findById(long id);
+    User findByUsername(String username);
+    List<User> findAll();
+}
+package com.se14.service;
+import com.se14.domain.*;
+
+import java.util.List;
+
+public interface DeveloperRecommendationService {
+    List<User> recommendDeveloper(Project project,Issue issue);
+}
+package com.se14.service.implement1;
+
+import com.se14.domain.Issue;
+import com.se14.domain.Project;
+import com.se14.domain.User;
+import com.se14.service.DeveloperRecommendationService;
+
+import java.util.*;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
+import org.springframework.ai.vertexai.palm2.VertexAiPaLm2EmbeddingClient;
+
+public class DeveloperRecommendationServiceImplement implements DeveloperRecommendationService {
+
+    private VertexAiPaLm2EmbeddingClient embeddingClient;
+
+    public DeveloperRecommendationServiceImplement() {
+        VertexAiPaLm2Api vertexAiApi = new VertexAiPaLm2Api("AIzaSyAGWMK7yH1XmPmeEe4z5PE8S0HKZFBJABU");
+        this.embeddingClient = new VertexAiPaLm2EmbeddingClient(vertexAiApi);
+    }
+
+    @Override
+    public List<User> recommendDeveloper(Project project, Issue newIssue) {
+        List<Issue> issues = project.getIssues();
+        List<String> issueTitles = new ArrayList<>();
+        for (Issue issue : issues) {
+            if (issue.getFixer() != null) {
+                issueTitles.add(issue.getTitle());
+            }
+        }
+        EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(issueTitles);
+        List<Embedding> issueEmbeddings = embeddingResponse.getResults();
+
+        EmbeddingResponse newIssueEmbeddingResponse = embeddingClient.embedForResponse(Collections.singletonList(newIssue.getTitle()));
+        Embedding newIssueEmbedding = newIssueEmbeddingResponse.getResult();
+
+        TreeMap<Double, User> similarityScores = new TreeMap<>();
+        for (int i = 0; i < issueEmbeddings.size(); i++) {
+            double similarity = calculateCosineSimilarity(issueEmbeddings.get(i).getOutput(), newIssueEmbedding.getOutput());
+            User fixer = issues.get(i).getFixer();
+            similarityScores.put(similarity, fixer);
+        }
+
+        // Retrieve top three developers based on highest similarity scores
+        List<User> recommendedDevelopers = new ArrayList<>();
+        for (Map.Entry<Double, User> entry : similarityScores.descendingMap().entrySet()) {
+            if (recommendedDevelopers.size() < 3 && !recommendedDevelopers.contains(entry.getValue())) {
+                recommendedDevelopers.add(entry.getValue());
+            }
+            if (recommendedDevelopers.size() == 3) {
+                break;
+            }
+        }
+
+        return recommendedDevelopers;
+        /*
+        Set<User> recommendedDevelopers = new HashSet<>();
+        while (recommendedDevelopers.size() < 3 && !similarityScores.isEmpty()) {
+            recommendedDevelopers.add(similarityScores.pollLastEntry().getValue());
+        }
+
+        return new ArrayList<>(recommendedDevelopers);
+        */
+    }
+
+    private double calculateCosineSimilarity(List<Double> vectorA, List<Double> vectorB) {
+        double dotProduct = 0.0;
+        double normA = 0.0;
+        double normB = 0.0;
+        for (int i = 0; i < vectorA.size(); i++) {
+            dotProduct += vectorA.get(i) * vectorB.get(i);
+            normA += Math.pow(vectorA.get(i), 2);
+            normB += Math.pow(vectorB.get(i), 2);
+        }
+        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    }
+}
+package com.se14.service.implement1;
+
+import com.se14.domain.*;
+import com.se14.service.*;
+import com.se14.repository.IssueRepository;
+import com.se14.repository.ProjectRepository;
+import com.se14.repository.UserRepository;
+import com.se14.repository.CommentRepository;
+
+import java.util.List;
+import java.util.Date;
+import java.util.stream.Collectors;
+public class IssueServiceImplement implements IssueService{
+    private IssueRepository issueRepository;
+    private ProjectRepository projectRepository;
+    private CommentRepository commentRepository;
+
+    public IssueServiceImplement(IssueRepository issueRepository, ProjectRepository projectRepository, CommentRepository commentRepository) {
+        this.issueRepository = issueRepository;
+        this.projectRepository = projectRepository;
+        this.commentRepository = commentRepository;
+    }
+    @Override
+    public void reportIssue(Project project, User reporter, String title, String description, IssuePriority priority) {
+        Issue newIssue = new Issue();
+        newIssue.setTitle(title);
+        newIssue.setDescription(description);
+        newIssue.setStatus(IssueStatus.NEW);
+        newIssue.setPriority(priority);
+        newIssue.setReporter(reporter);
+        newIssue.setReportedDate(new Date());
+
+        project.getIssues().add(newIssue);
+        projectRepository.save(project);
+        issueRepository.save(newIssue,project);
+    }
+
+    @Override
+    public List<Issue> searchIssues(Project project, SearchCriteria criteria) {
+        List<Issue> issues = issueRepository.findByProject(project);
+        if (criteria == null) {
+            return issues;
+        }
+
+        return issues.stream()
+                .filter(issue -> criteria.getTitle() == null || issue.getTitle().contains(criteria.getTitle()))
+                .filter(issue -> criteria.getDescription() == null || issue.getDescription().contains(criteria.getDescription()))
+                .filter(issue -> criteria.getStatus() == null || issue.getStatus().equals(criteria.getStatus()))
+                .filter(issue -> criteria.getPriority() == null || issue.getPriority().equals(criteria.getPriority()))
+                .filter(issue -> (criteria.getStartDate() == null || !issue.getReportedDate().before(criteria.getStartDate()))
+                        && (criteria.getEndDate() == null || !issue.getReportedDate().after(criteria.getEndDate())))
+                .filter(issue -> criteria.getReporter() == null || issue.getReporter().equals(criteria.getReporter()))
+                .filter(issue -> criteria.getFixer() == null || (issue.getFixer() != null && issue.getFixer().equals(criteria.getFixer())))
+                .filter(issue -> criteria.getAssignee() == null || (issue.getAssignee() != null && issue.getAssignee().equals(criteria.getAssignee())))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void assignIssue(Project project,User assigner, Issue issue, User assignee) {
+        if (issue.getStatus() == IssueStatus.NEW || issue.getStatus() == IssueStatus.REOPENED) {
+            issue.setAssignee(assignee);
+            issue.setStatus(IssueStatus.ASSIGNED);
+            issueRepository.save(issue,project);
+        }else{
+            System.out.println("Issue cannot be assigned due to state.");
+        }
+
+    }
+    @Override
+    public void updateIssueStatus(Project project,User updater, Issue issue, IssueStatus status) {
+        issue.setStatus(status);
+        if (status == IssueStatus.FIXED) {
+            issue.setFixer(updater);
+        }
+        issueRepository.save(issue,project);
+    }
+
+    @Override
+    public void addComment(Project project, User commenter, Issue issue, String commentTitle, String commentText) {
+        Comment newComment = new Comment(commentTitle,commentText,new Date(),commenter);
+        issue.getComments().add(newComment);
+        issueRepository.save(issue,project);
+        commentRepository.save(newComment,issue);
+    }
+
+}
+package com.se14.service.implement1;
+
+
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
+import org.springframework.ai.vertexai.palm2.VertexAiPaLm2EmbeddingClient;
+
+import java.util.Arrays;
+
+public class Main {
+
+    public static void main(String[] args) {
+        String apiKey = "AIzaSyAGWMK7yH1XmPmeEe4z5PE8S0HKZFBJABU";  // 실제 API 키로 교체 필요
+
+        VertexAiPaLm2Api vertexAiApi = new VertexAiPaLm2Api(apiKey);
+
+        VertexAiPaLm2EmbeddingClient embeddingClient = new VertexAiPaLm2EmbeddingClient(vertexAiApi);
+
+        EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(Arrays.asList("How do you solve this issue?", "What is the best practice in this case?"));
+
+        if (embeddingResponse != null) {
+            System.out.println("Embedding: " + embeddingResponse.getResults());
+        } else {
+            System.out.println("Failed to retrieve embeddings.");
+        }
+    }
+}
+package com.se14.service.implement1;
+
+import com.se14.domain.Issue;
+import com.se14.domain.Project;
+import com.se14.domain.User;
+import com.se14.domain.UserRole;
+import com.se14.repository.ProjectRepository;
+import com.se14.repository.UserRepository;
+import com.se14.service.ProjectService;
+
+import java.util.*;
+
+public class ProjectServiceImplement implements ProjectService {
+    private ProjectRepository projectRepository;
+    private UserRepository userRepository;
+
+    public ProjectServiceImplement(ProjectRepository projectRepo, UserRepository userRepo) {
+        this.projectRepository = projectRepo;
+        this.userRepository = userRepo;
+        // 필요한 필드를 여기에 초기화
+        // 예: this.anotherRepo = anotherRepo;
+    }
+    @Override
+    public List<Project> listProject() {
+        try {
+            List<Project> tmp = projectRepository.findAll();
+            if(tmp.isEmpty())
+            {
+                System.out.println("Empty Project");
+                return null;
+            }
+            return tmp;
+        } catch (Exception e) {
+            // Handle the exception, possibly logging it and returning an empty list or null
+            e.printStackTrace();
+            throw e;
+            //return null;
+        }
+    }
+
+    @Override
+    public Project createProject(User creator, String name, String description) {
+        try {
+            // Create a new Project instance
+            Project newProject = new Project();
+            newProject.setProjectTitle(name);
+            newProject.setProjectDescription(description);
+
+            // Add the creator as an admin to the project
+            addMemberToProject(newProject, creator, UserRole.ADMIN);
+
+
+            // Save the project to the repository
+            projectRepository.save(newProject);
+            return newProject;
+        } catch (Exception e) {
+            // Handle the exception, possibly logging it and returning null or throwing a custom exception
+            e.printStackTrace();
+            throw e;
+            //return null;
+        }
+    }
+
+    @Override
+    public void addMemberToProject(Project project, User user, UserRole role) {
+        try {
+            if (!project.getMembers().containsKey(user)) {
+                project.getMembers().put(user, new ArrayList<>());
+            }
+            if (!project.getMembers().get(user).contains(role)) {
+                project.getMembers().get(user).add(role);
+            }else {
+                System.out.println("User already has role");
+            }
+            projectRepository.save(project);
+        } catch (Exception e) {
+            // Handle the exception, possibly logging it
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    @Override
+    public Map<Calendar, List<Issue>> getStatistic(Project project) {
+        Map<Calendar, List<Issue>> issueStatistics = new HashMap<>();
+        List<Issue> issues = project.getIssues();
+
+        for (Issue issue : issues) {
+            // Create a Calendar instance and set it to the issue's created date
+            Calendar issueDate = Calendar.getInstance();
+            issueDate.setTime(issue.getReportedDate());
+
+            // Normalize the Calendar to remove time part for date-only comparison
+            issueDate.set(Calendar.HOUR_OF_DAY, 0);
+            issueDate.set(Calendar.MINUTE, 0);
+            issueDate.set(Calendar.SECOND, 0);
+            issueDate.set(Calendar.MILLISECOND, 0);
+
+            // Create a new instance for the key to avoid reference equality issues
+            Calendar normalizedDate = (Calendar) issueDate.clone();
+
+            // Add the issue to the corresponding date in the map
+            if (!issueStatistics.containsKey(normalizedDate)) {
+                issueStatistics.put(normalizedDate, new ArrayList<Issue>());
+            }
+            issueStatistics.get(normalizedDate).add(issue);
+        }
+
+        return issueStatistics;
+    }
+
+    @Override
+    public List<User> listUser(Project project, UserRole role) {
+        List<User> usersWithRole = new ArrayList<User>();
+
+        // Get the members of the project
+        Map<User, List<UserRole>> members = project.getMembers();
+
+        // Iterate through the members and check their roles
+        for (Map.Entry<User, List<UserRole>> entry : members.entrySet()) {
+            User user = entry.getKey();
+            List<UserRole> roles = entry.getValue();
+
+            // If the user has the specified role, add them to the list
+            if (roles.contains(role)) {
+                usersWithRole.add(user);
+            }
+        }
+        return usersWithRole;
+    }
+
+    @Override
+    public boolean hasUser(Project project,User user) {
+        // Get the members of the project
+        Map<User, List<UserRole>> members = project.getMembers();
+
+        // Check if the user is in the project's members map
+        return members.containsKey(user);
+    }
+    @Override
+    public Project findProjectById(long id) {
+        return projectRepository.findById(id).orElse(null);
+    }
+}
+package com.se14.service.implement1;
+
+import com.se14.domain.Project;
+import com.se14.domain.User;
+import com.se14.domain.UserRole;
+import com.se14.repository.UserRepository;
+import com.se14.service.SecurityService;
+
+import java.util.List;
+import java.util.Map;
+
+public class SecurityServiceImplement implements SecurityService {
+
+    private final UserRepository userRepository;
+
+    public SecurityServiceImplement(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Override
+    public boolean hasAccess(User user, Project project, UserRole requiredRole) {
+        // Check if the user is a member of the project
+        Map<User, List<UserRole>> members = project.getMembers();
+        if (!members.containsKey(user)) {
+            return false;
+        }
+
+        // Check if the user has the required role
+        List<UserRole> roles = members.get(user);
+        return roles.contains(requiredRole);
+    }
+
+    @Override
+    public boolean isAuthenticated(User user) {
+        // Check if the user exists in the repository
+        try {
+            User foundUser = userRepository.findById(user.getUserId()).orElse(null);
+            return foundUser != null;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+            //return false;
+        }
+    }
+}
+package com.se14.service.implement1;
+
+import com.se14.domain.Project;
+import com.se14.domain.User;
+import com.se14.domain.UserSession;
+import com.se14.domain.Issue;
+import com.se14.service.SessionService;
+
+public class SessionServiceImplement implements SessionService {
+
+    private UserSession userSession;
+
+    public SessionServiceImplement() {
+        this.userSession = new UserSession();
+    }
+
+    @Override
+    public UserSession getCurrentSession() {
+        return userSession;
+    }
+
+    @Override
+    public void setCurrentUser(User user) {
+        userSession.setCurrentUser(user);
+    }
+
+    @Override
+    public void setCurrentProject(Project project) {
+        userSession.setCurrentProject(project);
+    }
+
+    @Override
+    public void setCurrentIssue(Issue issue) {
+        userSession.setCurrentIssue(issue);
+    }
+}
+package com.se14.service.implement1;
+
+import com.se14.domain.User;
+import com.se14.repository.UserRepository;
+import com.se14.service.UserService;
+
+import java.util.List;
+
+public class UserServiceImplement implements UserService {
+
+    private final UserRepository userRepository;
+
+    public UserServiceImplement(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Override
+    public User authenticateUser(String username, String password) {
+        User user = userRepository.findByUsername(username);
+        if (user != null && user.getPassword().equals(password)) {
+            return user;
+        }
+        if(user == null)
+        {
+            System.out.println("no user found");
+        }else
+        if(!user.getPassword().equals(password)) {
+            System.out.println("Wrong password");
+        }
+        return null;
+    }
+
+    @Override
+    public void addNewUser(String username, String password, String email) {
+        User newUser = new User(password);
+        newUser.setUsername(username);
+        newUser.setEmail(email);
+        userRepository.save(newUser);
+    }
+
+    @Override
+    public List<User> listAllUser() {
+        return userRepository.findAll();
+    }
+    @Override
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+}
+package com.se14.service;
+
+import com.se14.domain.*;
+
+import java.util.List;
+
+public interface IssueService {
+    void reportIssue(Project project, User reporter,String title, String description, IssuePriority priority);
+    List<Issue> searchIssues(Project project,SearchCriteria criteria);
+    //List<Issue> searchByFilter(String filter); // filter = "project:test status:new ..."
+    void assignIssue(Project project, User assigner, Issue issue, User assignee);
+    void updateIssueStatus(Project project, User updater, Issue issue, IssueStatus status);
+    void addComment(Project project, User commenter, Issue issue, String commentTitle, String commentText);
+}
+package com.se14.service;
+
+import com.se14.domain.*;
+
+import java.util.Calendar;
+import java.util.List;
+import java.util.Map;
+
+public interface ProjectService {
+    List<Project> listProject();
+    Project createProject(User creator,String name, String description);
+    void addMemberToProject(Project project,User user, UserRole role);
+    Map<Calendar,List<Issue>> getStatistic(Project project);
+    List<User> listUser(Project project, UserRole role);
+    boolean hasUser(Project project,User user);
+    Project findProjectById(long id);
+}
+package com.se14.service;
+
+import com.se14.domain.*;
+
+import java.util.Date;
+
+public class SearchCriteria {
+    private String title;
+    private String description;
+    private IssueStatus status;
+    private IssuePriority priority;
+    private Date startDate;
+    private Date endDate;
+    private User reporter;
+    private User fixer;
+    private User assignee;
+
+    // Constructors
+    public SearchCriteria() { }
+    public SearchCriteria(String title, String description, IssueStatus status, IssuePriority priority,
+                          Date startDate, Date endDate, User reporter, User fixer, User assignee) {
+        this.title = title;
+        this.description = description;
+        this.status = status;
+        this.priority = priority;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.reporter = reporter;
+        this.fixer = fixer;
+        this.assignee = assignee;
+    }
+
+
+    // Getters and setters for each field
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public IssueStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(IssueStatus status) {
+        this.status = status;
+    }
+
+    public IssuePriority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(IssuePriority priority) {
+        this.priority = priority;
+    }
+
+    public User getReporter() {
+        return reporter;
+    }
+
+    public void setReporter(User reporter) {
+        this.reporter = reporter;
+    }
+
+    public User getFixer() {
+        return fixer;
+    }
+
+    public void setFixer(User fixer) {
+        this.fixer = fixer;
+    }
+
+    public User getAssignee() {
+        return assignee;
+    }
+
+    public void setAssignee(User assignee) {
+        this.assignee = assignee;
+    }
+
+    public Date getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
+    }
+
+    public Date getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
+    }
+}
+
+package com.se14.service;
+
+import com.se14.domain.Project;
+import com.se14.domain.User;
+import com.se14.domain.UserRole;
+
+public interface SecurityService {
+    boolean hasAccess(User user, Project project, UserRole requiredRole);
+    boolean isAuthenticated(User user);
+}
+package com.se14.service;
+
+import com.se14.domain.Issue;
+import com.se14.domain.Project;
+import com.se14.domain.User;
+import com.se14.domain.UserSession;
+
+// 새로 추가될 메서드가 존재?
+// 아니면 Domain의 UserSession으로 통합해도 괜찮을듯..?
+public interface SessionService {
+    UserSession getCurrentSession();
+    void setCurrentUser(User user);
+    void setCurrentProject(Project project);
+    void setCurrentIssue(Issue issue);
+}
+package com.se14.service;
+
+import com.se14.domain.User;
+
+import java.util.List;
+
+public interface UserService {
+    //User join(User user);
+    User authenticateUser(String username, String password);
+    void addNewUser(String username, String password, String email);
+    List<User> listAllUser();
+    User findByUsername(String username);
+}
+package com.se14.view;
+
+import com.se14.domain.Issue;
+
+import javax.swing.*;
+import java.awt.*;
+
+public class IssueDetailPanel extends JPanel {
+    private JLabel titleLabel;
+    private JTextArea descriptionArea;
+    private JLabel statusLabel;
+    private JLabel priorityLabel;
+    private JLabel assigneeLabel;
+    private JLabel fixerLabel;
+    private JLabel reporterLabel;
+    private JLabel reportedDateLabel;
+
+    public IssueDetailPanel() {
+        setLayout(new BorderLayout());
+
+        JPanel detailPanel = new JPanel();
+        detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
+
+        titleLabel = new JLabel();
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+
+        descriptionArea = new JTextArea();
+        descriptionArea.setWrapStyleWord(true);
+        descriptionArea.setLineWrap(true);
+        descriptionArea.setEditable(false);
+
+        JPanel smallDetailPanel = new JPanel();
+        smallDetailPanel.setLayout(new GridLayout(7, 2));
+        smallDetailPanel.setBorder(BorderFactory.createTitledBorder("Details"));
+
+        statusLabel = new JLabel();
+        priorityLabel = new JLabel();
+        assigneeLabel = new JLabel();
+        fixerLabel = new JLabel();
+        reporterLabel = new JLabel();
+        reportedDateLabel = new JLabel();
+
+        smallDetailPanel.add(new JLabel("Status:"));
+        smallDetailPanel.add(statusLabel);
+        smallDetailPanel.add(new JLabel("Priority:"));
+        smallDetailPanel.add(priorityLabel);
+        smallDetailPanel.add(new JLabel("Assignee:"));
+        smallDetailPanel.add(assigneeLabel);
+        smallDetailPanel.add(new JLabel("Fixer:"));
+        smallDetailPanel.add(fixerLabel);
+        smallDetailPanel.add(new JLabel("Reporter:"));
+        smallDetailPanel.add(reporterLabel);
+        smallDetailPanel.add(new JLabel("Reported Date:"));
+        smallDetailPanel.add(reportedDateLabel);
+
+        detailPanel.add(titleLabel);
+        detailPanel.add(new JScrollPane(descriptionArea));
+
+        add(detailPanel, BorderLayout.CENTER);
+        add(smallDetailPanel, BorderLayout.EAST);
+    }
+
+    public void setIssue(Issue issue) {
+        titleLabel.setText(issue.getTitle());
+        descriptionArea.setText(issue.getDescription());
+        statusLabel.setText(issue.getStatus().toString());
+        priorityLabel.setText(issue.getPriority().toString());
+        assigneeLabel.setText(issue.getAssignee() != null ? issue.getAssignee().getUsername() : "");
+        fixerLabel.setText(issue.getFixer() != null ? issue.getFixer().getUsername() : "");
+        reporterLabel.setText(issue.getReporter().getUsername());
+        reportedDateLabel.setText(issue.getReportedDate().toString());
+    }
+}
+package com.se14.view;
+
+import com.se14.domain.Issue;
+import com.se14.domain.IssuePriority;
+import com.se14.domain.IssueStatus;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.event.ActionListener;
+import java.util.List;
+
+public class IssuePanel extends JPanel {
+    private JTable issueTable;
+    private DefaultTableModel tableModel;
+    private JComboBox<IssueStatus> statusFilter;
+    private JComboBox<IssuePriority> priorityFilter;
+    private JComboBox<String> assigneeFilter;
+    private JComboBox<String> fixerFilter;
+    private JButton filterButton;
+    private JButton resetButton;
+    private IssueDetailListener issueDetailListener;
+
+    public interface IssueDetailListener {
+        void onIssueTitleClicked(String issueTitle);
+    }
+
+    public void setIssueDetailListener(IssueDetailListener listener) {
+        this.issueDetailListener = listener;
+    }
+
+    public IssuePanel() {
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
+        JPanel filterPanel = new JPanel();
+        filterPanel.setLayout(new BoxLayout(filterPanel, BoxLayout.X_AXIS));
+
+        statusFilter = new JComboBox<>(IssueStatus.values());
+        priorityFilter = new JComboBox<>(IssuePriority.values());
+        assigneeFilter = new JComboBox<>();
+        fixerFilter = new JComboBox<>();
+
+        // Add null (empty) options
+        statusFilter.insertItemAt(null, 0);
+        priorityFilter.insertItemAt(null, 0);
+        assigneeFilter.addItem(null);
+        fixerFilter.addItem(null);
+
+        // Set default selected item to null
+        statusFilter.setSelectedIndex(0);
+        priorityFilter.setSelectedIndex(0);
+        assigneeFilter.setSelectedIndex(0);
+        fixerFilter.setSelectedIndex(0);
+
+        filterPanel.add(new JLabel("Status:"));
+        filterPanel.add(statusFilter);
+        filterPanel.add(new JLabel("Priority:"));
+        filterPanel.add(priorityFilter);
+        filterPanel.add(new JLabel("Assignee:"));
+        filterPanel.add(assigneeFilter);
+        filterPanel.add(new JLabel("Fixer:"));
+        filterPanel.add(fixerFilter);
+
+        filterButton = new JButton("Filter");
+        resetButton = new JButton("Reset");
+        filterPanel.add(filterButton);
+        filterPanel.add(resetButton);
+
+        add(filterPanel);
+
+        String[] columnNames = {"Title", "Description", "Status", "Priority", "Assignee", "Fixer"};
+        tableModel = new DefaultTableModel(columnNames, 0);
+        issueTable = new JTable(tableModel);
+        issueTable.setDefaultEditor(Object.class, null);  // Make table non-editable
+
+        issueTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                int row = issueTable.rowAtPoint(evt.getPoint());
+                int col = issueTable.columnAtPoint(evt.getPoint());
+                if (col == 0 && issueDetailListener != null) {
+                    String issueTitle = (String) issueTable.getValueAt(row, col);
+                    issueDetailListener.onIssueTitleClicked(issueTitle);
+                }
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(issueTable);
+        add(scrollPane);
+    }
+
+    public void setIssues(List<Issue> issues) {
+        tableModel.setRowCount(0); // Clear existing rows
+        assigneeFilter.removeAllItems();
+        fixerFilter.removeAllItems();
+
+        // Add null (empty) options
+        assigneeFilter.addItem(null);
+        fixerFilter.addItem(null);
+
+        for (Issue issue : issues) {
+            String assignee = issue.getAssignee() != null ? issue.getAssignee().getUsername() : "";
+            String fixer = issue.getFixer() != null ? issue.getFixer().getUsername() : "";
+            Object[] row = {issue.getTitle(), issue.getDescription(), issue.getStatus(), issue.getPriority(), assignee, fixer};
+            tableModel.addRow(row);
+
+            if (issue.getAssignee() != null && !assigneeExists(assignee)) {
+                assigneeFilter.addItem(assignee);
+            }
+
+            if (issue.getFixer() != null && !fixerExists(fixer)) {
+                fixerFilter.addItem(fixer);
+            }
+        }
+    }
+
+    public void addFilterButtonListener(ActionListener listener) {
+        filterButton.addActionListener(listener);
+    }
+
+    public void addResetButtonListener(ActionListener listener) {
+        resetButton.addActionListener(listener);
+    }
+
+    public IssueStatus getSelectedStatus() {
+        return (IssueStatus) statusFilter.getSelectedItem();
+    }
+
+    public IssuePriority getSelectedPriority() {
+        return (IssuePriority) priorityFilter.getSelectedItem();
+    }
+
+    public String getSelectedAssignee() {
+        return (String) assigneeFilter.getSelectedItem();
+    }
+
+    public String getSelectedFixer() {
+        return (String) fixerFilter.getSelectedItem();
+    }
+
+    private boolean assigneeExists(String assignee) {
+        for (int i = 0; i < assigneeFilter.getItemCount(); i++) {
+            if (assigneeFilter.getItemAt(i) != null && assigneeFilter.getItemAt(i).equals(assignee)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean fixerExists(String fixer) {
+        for (int i = 0; i < fixerFilter.getItemCount(); i++) {
+            if (fixerFilter.getItemAt(i) != null && fixerFilter.getItemAt(i).equals(fixer)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+package com.se14.view;
+
+import com.se14.controller.Controller;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class LoginView extends JFrame {
+    private JTextField usernameField;
+    private JPasswordField passwordField;
+    private JButton loginButton;
+
+    public LoginView() {
+        setTitle("Login");
+        setSize(300, 150);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        JPanel panel = new JPanel();
+        usernameField = new JTextField(15);
+        passwordField = new JPasswordField(15);
+        loginButton = new JButton("Login");
+
+        panel.add(new JLabel("Username:"));
+        panel.add(usernameField);
+        panel.add(new JLabel("Password:"));
+        panel.add(passwordField);
+        panel.add(loginButton);
+
+        add(panel);
+
+        loginButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String username = usernameField.getText();
+                String password = new String(passwordField.getPassword());
+                Controller.getInstance().attemptLogin(username, password);
+            }
+        });
+    }
+
+    public void showErrorMessage(String message) {
+        JOptionPane.showMessageDialog(this, message, "Login Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+package com.se14.view;
+
+import com.se14.domain.Issue;
+import com.se14.domain.Project;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.List;
+
+public class MainView extends JFrame {
+    private JButton loginButton;
+    private JButton signInButton;
+    private JButton logoutButton;
+    private JLabel userLabel;
+    private JPanel cardPanel;  // 패널을 담을 CardLayout 패널
+    private CardLayout cardLayout;  // CardLayout 관리자
+    private ProjectPanel projectPanel;  // 프로젝트 목록을 보여주는 패널
+    private IssueDetailPanel issueDetailPanel;  // 이슈 상세정보를 보여주는 패널
+
+    private JButton homeButton;
+    private IssuePanel issuePanel;
+
+    public MainView() {
+        setTitle("Project Main Page");
+        setSize(1200, 800);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        cardLayout = new CardLayout();
+        cardPanel = new JPanel(cardLayout);
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+
+        loginButton = new JButton("Log In");
+        signInButton = new JButton("Sign In");
+        logoutButton = new JButton("Log Out");
+        userLabel = new JLabel("Welcome, Guest");
+        homeButton = new JButton("Home");
+
+        buttonPanel.add(homeButton);
+        buttonPanel.add(loginButton);
+        buttonPanel.add(signInButton);
+
+        rightPanel.add(userLabel);
+        rightPanel.add(logoutButton);
+
+        topPanel.add(buttonPanel, BorderLayout.WEST);
+        topPanel.add(rightPanel, BorderLayout.EAST);
+
+        projectPanel = new ProjectPanel();
+        issuePanel = new IssuePanel();
+        issueDetailPanel = new IssueDetailPanel();
+
+
+        cardPanel.add(projectPanel, "Projects");
+        cardPanel.add(issuePanel, "Issues");
+        cardPanel.add(issueDetailPanel, "IssueDetail");
+
+
+
+        add(topPanel, BorderLayout.NORTH);
+        add(cardPanel, BorderLayout.CENTER);
+
+        logoutButton.setVisible(false);
+        userLabel.setVisible(false);
+    }
+
+    public void addLoginButtonListener(ActionListener listener) {
+        loginButton.addActionListener(listener);
+    }
+
+    public void addSignInButtonListener(ActionListener listener) {
+        signInButton.addActionListener(listener);
+    }
+
+    public void addLogoutButtonListener(ActionListener listener) {
+        logoutButton.addActionListener(listener);
+    }
+
+    public void addHomeButtonListener(ActionListener listener) {
+        homeButton.addActionListener(listener);
+    }
+
+    public void setLoggedIn(boolean loggedIn, String username) {
+        loginButton.setVisible(!loggedIn);
+        signInButton.setVisible(!loggedIn);
+        logoutButton.setVisible(loggedIn);
+        userLabel.setVisible(loggedIn);
+
+        projectPanel.setCreateProjectButtonVisible(loggedIn);
+
+        if (loggedIn) {
+            userLabel.setText("Welcome, " + username);
+        } else {
+            userLabel.setText("Welcome, Guest");
+        }
+    }
+
+    public void setProjects(List<Project> projects, ActionListener projectClickListener) {
+        projectPanel.setProjects(projects, projectClickListener);
+    }
+    public void setIssues(List<Issue> issues) {
+        issuePanel.setIssues(issues);
+        showView("Issues");
+    }
+    public void addCreateProjectButtonListener(ActionListener listener) {
+        projectPanel.addCreateProjectButtonListener(listener);
+    }
+    public IssuePanel getIssuePanel() {
+        return issuePanel;
+    }
+    public IssueDetailPanel getIssueDetailPanel() {
+        return issueDetailPanel;
+    }
+    // 새로운 패널을 CardLayout에 추가하기 위한 메서드
+    public void addView(JPanel panel, String name) {
+        cardPanel.add(panel, name);
+    }
+
+    // 카드 레이아웃에서 특정 뷰를 보여주기 위한 메서드
+    public void showView(String name) {
+        cardLayout.show(cardPanel, name);
+    }
+}
+package com.se14.view;
+
+import com.se14.domain.Project;
+
+import javax.swing.*;
+import java.awt.event.ActionListener;
+import java.util.List;
+
+public class ProjectPanel extends JPanel {
+    private JButton createProjectButton;
+    public ProjectPanel() {
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
+        createProjectButton = new JButton("Create Project");
+        add(createProjectButton);
+    }
+
+    public void setProjects(List<Project> projects, ActionListener projectClickListener) {
+        removeAll();
+        add(createProjectButton);
+        for (Project project : projects) {
+            JButton projectButton = new JButton("<html><b>" + project.getProjectTitle() + "</b><br/>" + project.getProjectDescription() + "</html>");
+            projectButton.setActionCommand(String.valueOf(project.getProjectId()));
+            projectButton.addActionListener(projectClickListener);
+            add(projectButton);
+        }
+        revalidate();
+        repaint();
+    }
+    public void addCreateProjectButtonListener(ActionListener listener) {
+        createProjectButton.addActionListener(listener);
+    }
+    public void setCreateProjectButtonVisible(boolean visible) {
+        createProjectButton.setVisible(visible);
+    }
+
+}
+package com.se14.view;
+
+import com.se14.controller.Controller;
+
+import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class SignInView extends JFrame {
+    private JTextField usernameField;
+    private JPasswordField passwordField;
+    private JTextField emailField;
+    private JButton signInButton;
+
+    public SignInView() {
+        setTitle("Sign In");
+        setSize(300, 200);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        JPanel panel = new JPanel();
+        usernameField = new JTextField(15);
+        passwordField = new JPasswordField(15);
+        emailField = new JTextField(15);
+        signInButton = new JButton("Sign In");
+
+        panel.add(new JLabel("Username:"));
+        panel.add(usernameField);
+        panel.add(new JLabel("Password:"));
+        panel.add(passwordField);
+        panel.add(new JLabel("Email:"));
+        panel.add(emailField);
+        panel.add(signInButton);
+
+        add(panel);
+
+        signInButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String username = usernameField.getText();
+                String password = new String(passwordField.getPassword());
+                String email = emailField.getText();
+                Controller.getInstance().attemptSignIn(username, password, email);
+            }
+        });
+    }
+
+    public void showSuccessMessage() {
+        JOptionPane.showMessageDialog(this, "Sign in successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        dispose();
+    }
+
+    public void showErrorMessage(String message) {
+        JOptionPane.showMessageDialog(this, message, "Sign In Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+package com.se14.view;
+
+import javax.swing.*;
+
+public class SwingView extends JFrame {
+    public SwingView() {
+        setTitle("Test");
+        setSize(500, 500);
+        setVisible(true);
+    }
+}
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.*;
+
+public class ApplicationExampleTests {
+    private final ApplicationExample applicationExample = new ApplicationExample();
+
+    @Test
+    @DisplayName("Hello World Test")
+    public void helloWorld() {
+        assertThat(applicationExample.helloWorld()).isEqualTo("Hello World!");
+    }
+
+    @Test
+    @DisplayName("Hello Worlds Test")
+    public void helloWorlds() {
+        assertThat(applicationExample.helloWorld()).isEqualTo("Hello World!");
+    }
+}
+package com.se14.service.implement1;
+
+import com.se14.domain.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.ai.vertexai.palm2.VertexAiPaLm2EmbeddingClient;
+import org.springframework.ai.vertexai.palm2.api.VertexAiPaLm2Api;
+
+import java.util.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class DeveloperRecommendationServiceImplementTest {
+
+    private DeveloperRecommendationServiceImplement developerRecommendationService;
+    private Project project;
+    private List<User> users;
+    private List<Issue> issues;
+
+    @BeforeEach
+    void setUp() {
+        /*
+        String apiKey = "AIzaSyAGWMK7yH1XmPmeEe4z5PE8S0HKZFBJABU";
+        VertexAiPaLm2Api vertexAiApi = new VertexAiPaLm2Api(apiKey);
+        VertexAiPaLm2EmbeddingClient embeddingClient = new VertexAiPaLm2EmbeddingClient(vertexAiApi);
+*/
+        developerRecommendationService = new DeveloperRecommendationServiceImplement();
+
+        // Set up the project and users
+        project = new Project();
+        project.setProjectId(1);
+        project.setProjectTitle("Main Project");
+        project.setProjectDescription("Project Description");
+
+        users = new ArrayList<>();
+        Map<User, List<UserRole>> memberRoles = new HashMap<>();
+        issues = new ArrayList<>();
+
+        // Create 10 users and assign them as DEVELOPERS
+        for (int i = 0; i < 10; i++) {
+            User user = new User();
+            user.setUserId(i);
+            user.setUsername("Developer_" + i);
+            users.add(user);
+            memberRoles.put(user, Collections.singletonList(UserRole.DEVELOPER));
+        }
+
+        project.setMembers(memberRoles);
+
+        String[] issueTitles = new String[] {
+                "UI Layout Break on Resize", "Database Connection Timeout", "API Latency Issues",
+                "Memory Leak in Data Processing", "CSS Overlapping Styles", "Javascript Function Error",
+                "Backend Server Crash", "Mobile Responsiveness Fail", "Authentication Timeout Failure",
+                "Cross-Site Scripting (XSS) Vulnerability", "Missing Icons in Production", "Infinite Loop in Calculation",
+                "Data Mismatch on Synchronization", "Incorrect User Role Permissions", "Email Notification Failure",
+                "Search Functionality Returning Errors", "Video Playback Interruption", "Payment Gateway Rejection Issue",
+                "Location Services Not Responding", "API Gateway Throttling Problems"
+        };
+
+        // Generate issues, each solved by a different developer, cycling through developers
+        for (int i = 0; i < issueTitles.length; i++) {
+            Issue issue = new Issue(users.get(i % 10), issueTitles[i], "Description for " + issueTitles[i], IssuePriority.MAJOR);
+            issue.setFixer(users.get(i % 10));
+            issues.add(issue);
+        }
+
+        project.setIssues(issues);
+    }
+
+    @Test
+    @DisplayName("Recommend top 3 developers for a new issue using real embeddings")
+    void testRecommendDeveloper() {
+        Issue newIssue = new Issue();
+        newIssue.setTitle("RDB repository sync error");
+        newIssue.setDescription("Sync error needs resolution");
+        newIssue.setStatus(IssueStatus.NEW);
+        newIssue.setReportedDate(new Date());
+
+        List<User> recommendedDevelopers = developerRecommendationService.recommendDeveloper(project, newIssue);
+
+        assertThat(recommendedDevelopers).isNotEmpty();
+        assertThat(recommendedDevelopers.size()).isEqualTo(3);
+        System.out.println("Recommended Developers: " + recommendedDevelopers);
+    }
+    @Test
+    @DisplayName("Recommend a single developer when only one has fixed all issues in a smaller project")
+    void testRecommendSingleDeveloperForSmallProject() {
+        // Set up a smaller project with only 2 issues, both fixed by the same developer
+        Project smallProject = new Project();
+        smallProject.setProjectId(2);
+        smallProject.setProjectTitle("Small Project");
+        smallProject.setProjectDescription("A small project with limited issues");
+
+        //List<User> smallProjectUsers = new ArrayList<>();
+        Map<User, List<UserRole>> smallMemberRoles = new HashMap<>();
+        List<Issue> smallProjectIssues = new ArrayList<>();
+
+        // Create one developer and assign them as DEVELOPER
+        User singleDeveloper = new User();
+        singleDeveloper.setUserId(10);
+        singleDeveloper.setUsername("Solo_Developer");
+        //smallProjectUsers.add(singleDeveloper);
+        smallMemberRoles.put(singleDeveloper, Collections.singletonList(UserRole.DEVELOPER));
+
+        smallProject.setMembers(smallMemberRoles);
+
+        // Add two issues fixed by the same developer
+        Issue issue1 = new Issue(singleDeveloper, "Minor UI Bug", "Minor alignment issue on the dashboard", IssuePriority.MINOR);
+        issue1.setFixer(singleDeveloper);
+        smallProjectIssues.add(issue1);
+
+        Issue issue2 = new Issue(singleDeveloper, "Login Page Error", "Error on login page under specific conditions", IssuePriority.MINOR);
+        issue2.setFixer(singleDeveloper);
+        smallProjectIssues.add(issue2);
+
+        smallProject.setIssues(smallProjectIssues);
+
+        // Simulate the scenario for a new issue
+        Issue newIssue = new Issue();
+        newIssue.setTitle("New Minor Feature Request");
+        newIssue.setDescription("Request to add a new button to UI");
+        newIssue.setStatus(IssueStatus.NEW);
+        newIssue.setReportedDate(new Date());
+
+        // Use the recommendation service to get recommendations
+        List<User> recommendedDevelopers = developerRecommendationService.recommendDeveloper(smallProject, newIssue);
+
+        // Assert that only one developer is recommended and it's the correct one
+        assertThat(recommendedDevelopers).hasSize(1);
+        assertThat(recommendedDevelopers.get(0).getUserId()).isEqualTo(singleDeveloper.getUserId());
+        System.out.println("Recommended Developer for small project: " + recommendedDevelopers.get(0).getUsername());
+    }
+
+}package com.se14.service.implement1;
+
+import com.se14.domain.*;
+import com.se14.repository.IssueRepository;
+import com.se14.repository.ProjectRepository;
+import com.se14.repository.CommentRepository;
+import com.se14.service.SearchCriteria;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import static org.mockito.Mockito.*;
+
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.Date;
+import  java.util.Calendar;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+@ExtendWith(MockitoExtension.class)
+public class IssueServiceImplementTests {
+
+    @Mock
+    private IssueRepository issueRepository;
+
+    @Mock
+    private ProjectRepository projectRepository;
+    @Mock
+    private CommentRepository commentRepository;
+
+    @InjectMocks
+    private IssueServiceImplement issueService;
+    private Project project_test;
+    private User user_test;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        project_test = new Project();
+        project_test.setIssues(new ArrayList<>());
+        user_test = new User();
+        user_test.setUsername("johnDoe");
+
+        Calendar cal = Calendar.getInstance();
+        cal.set(2024, Calendar.MAY, 10, 0, 0, 0); // Starting from May 10, 2024
+
+        // Set up a project with 10 issues and 2 comments per issue
+        for (int i = 0; i < 10; i++) {
+            Issue issue = new Issue();
+            issue.setTitle("Issue " + i);
+            issue.setDescription("Description " + i);
+            issue.setPriority(IssuePriority.MAJOR);
+            issue.setStatus(IssueStatus.NEW);
+            issue.setReporter(user_test);
+            issue.setReportedDate(cal.getTime());
+
+            // Add comments to each issue
+            List<Comment> comments = new ArrayList<>();
+            comments.add(new Comment("Comment 1 for Issue " + i, "Content 1 for Issue " + i, new Date(), user_test));
+            comments.add(new Comment("Comment 2 for Issue " + i, "Content 2 for Issue " + i, new Date(), user_test));
+            issue.setComments(comments);
+
+            project_test.getIssues().add(issue);
+            cal.add(Calendar.DATE, 1);
+        }
+
+    }
+
+    @Test
+    @DisplayName("Search Issues with no criteria returns all issues")
+    void testSearchIssuesWithNoCriteria() {
+        when(issueRepository.findByProject(eq(project_test))).thenReturn(project_test.getIssues());
+        // Act
+        List<Issue> foundIssues = issueService.searchIssues(project_test, null);
+
+        // Assert
+        assertThat(foundIssues).hasSize(10).containsAll(project_test.getIssues());
+    }
+
+    @Test
+    @DisplayName("Search Issues filters correctly by title")
+    void testSearchIssuesByTitle() {
+        // Arrange
+        when(issueRepository.findByProject(eq(project_test))).thenReturn(project_test.getIssues());
+
+        SearchCriteria criteria = new SearchCriteria();
+        criteria.setTitle("Issue 1");
+
+        // Act
+        List<Issue> foundIssues = issueService.searchIssues(project_test, criteria);
+
+        // Assert
+        assertThat(foundIssues).hasSize(1);
+        assertThat(foundIssues.get(0).getTitle()).isEqualTo("Issue 1");
+    }
+    @Test
+    @DisplayName("Search Issues filters correctly by title2")
+    void testSearchIssuesByTitle2() {
+        when(issueRepository.findByProject(eq(project_test))).thenReturn(project_test.getIssues());
+
+        // Arrange
+        SearchCriteria criteria = new SearchCriteria();
+        criteria.setTitle("Is");
+
+        // Act
+        List<Issue> foundIssues = issueService.searchIssues(project_test, criteria);
+
+        // Assert
+        assertThat(foundIssues).hasSize(10);
+        for(int i=0; i<10; i++) {
+            assertThat(foundIssues.get(i).getTitle()).isEqualTo("Issue "+i);
+        }
+    }
+    @Test
+    @DisplayName("Search Issues filters correctly by time")
+    void testSearchIssuesByTime() {
+        when(issueRepository.findByProject(eq(project_test))).thenReturn(project_test.getIssues());
+        // Arrange
+        SearchCriteria criteria = new SearchCriteria();
+        Calendar startCal = Calendar.getInstance();
+        startCal.set(2024, Calendar.MAY, 14, 23, 59, 59);
+        Calendar endCal = Calendar.getInstance();
+        endCal.set(2024, Calendar.MAY, 17, 23, 59, 59);
+
+        criteria.setStartDate(startCal.getTime());
+        criteria.setEndDate(endCal.getTime());
+
+        // Act
+        List<Issue> foundIssues = issueService.searchIssues(project_test, criteria);
+
+        // Assert
+        assertThat(foundIssues).hasSize(3).extracting("title")
+                .containsExactly("Issue 5", "Issue 6", "Issue 7");
+    }
+
+
+    @Test
+    @DisplayName("Report Issue correctly adds issue to project")
+    void reportIssue() {
+        // Arrange
+        User reporter = new User();
+        reporter.setUsername("johnDoe");
+
+        Project project = new Project();
+        project.setIssues(new ArrayList<>());
+
+        String title = "New Issue";
+        String description = "Description of new issue";
+        IssuePriority priority = IssuePriority.MAJOR;
+
+        // Act
+        issueService.reportIssue(project, reporter, title, description, priority);
+
+        // Assert
+        assertThat(project.getIssues()).isNotEmpty();
+        assertThat(project.getIssues().get(0).getTitle()).isEqualTo(title);
+        assertThat(project.getIssues().get(0).getDescription()).isEqualTo(description);
+        assertThat(project.getIssues().get(0).getPriority()).isEqualTo(priority);
+
+        verify(projectRepository).save(project);
+        verify(issueRepository).save(any(Issue.class), any(Project.class));
+    }
+    @Test
+    @DisplayName("Report multiple issues across multiple projects")
+    void reportMultipleIssues() {
+        // Arrange
+        Project project1 = new Project();
+        project1.setIssues(new ArrayList<>());
+        Project project2 = new Project();
+        project2.setIssues(new ArrayList<>());
+
+        ArrayList<User> usersProject1 = new ArrayList<>();
+        ArrayList<User> usersProject2 = new ArrayList<>();
+
+        for (int i = 0; i < 10; i++) {
+            User user = new User();
+            user.setUsername("userProj1_" + i);
+            usersProject1.add(user);
+
+            user = new User();
+            user.setUsername("userProj2_" + i);
+            usersProject2.add(user);
+        }
+
+        // Act
+        for (int i = 0; i < 10; i++) {
+            issueService.reportIssue(project1, usersProject1.get(i), "Issue " + i, "Description " + i, IssuePriority.MAJOR);
+            issueService.reportIssue(project2, usersProject2.get(i), "Issue " + i, "Description " + i, IssuePriority.MINOR);
+        }
+
+        // Assert
+        assertThat(project1.getIssues()).hasSize(10);
+        for (int i = 0; i < 10; i++) {
+            assertThat(project1.getIssues().get(i).getTitle()).isEqualTo("Issue " + i);
+            assertThat(project1.getIssues().get(i).getDescription()).isEqualTo("Description " + i);
+            assertThat(project1.getIssues().get(i).getPriority()).isEqualTo(IssuePriority.MAJOR);
+        }
+
+        assertThat(project2.getIssues()).hasSize(10);
+        for (int i = 0; i < 10; i++) {
+            assertThat(project2.getIssues().get(i).getTitle()).isEqualTo("Issue " + i);
+            assertThat(project2.getIssues().get(i).getDescription()).isEqualTo("Description " + i);
+            assertThat(project2.getIssues().get(i).getPriority()).isEqualTo(IssuePriority.MINOR);
+        }
+
+        verify(projectRepository, times(20)).save(any(Project.class));
+        verify(issueRepository, times(20)).save(any(Issue.class), any(Project.class));
+    }
+    @Test
+    @DisplayName("Assign issue when status is NEW or REOPENED")
+    void testAssignIssueWithValidStatus() {
+        // Arrange
+        Project project = new Project();
+        User assigner = new User();
+        User assignee = new User();
+        Issue issue = new Issue();
+        issue.setStatus(IssueStatus.NEW); // 테스트할 이슈 상태 설정
+
+        // Act
+        issueService.assignIssue(project, assigner, issue, assignee);
+
+        // Assert
+        assertThat(issue.getAssignee()).isEqualTo(assignee);
+        assertThat(issue.getStatus()).isEqualTo(IssueStatus.ASSIGNED);
+        verify(issueRepository).save(issue, project);
+    }
+
+    @Test
+    @DisplayName("Do not assign issue if status is not NEW or REOPENED")
+    void testAssignIssueWithInvalidStatus() {
+        // Arrange
+        Project project = new Project();
+        User assigner = new User();
+        User assignee = new User();
+        Issue issue = new Issue();
+        issue.setStatus(IssueStatus.RESOLVED); // 테스트할 이슈 상태 설정
+
+        // Act
+        issueService.assignIssue(project, assigner, issue, assignee);
+
+        // Assert
+        assertThat(issue.getAssignee()).isNotEqualTo(assignee); // 이슈에 할당되지 않아야 합니다.
+        assertThat(issue.getStatus()).isNotEqualTo(IssueStatus.ASSIGNED); // 상태가 변경되지 않아야 합니다.
+        verify(issueRepository, never()).save(issue, project); // 저장되지 않아야 합니다.
+    }
+    @Test
+    @DisplayName("Update issue status to FIXED and set fixer")
+    void testUpdateIssueStatusToFixed() {
+        // Arrange
+        IssueStatus newStatus = IssueStatus.FIXED;
+        Issue issue = project_test.getIssues().get(0);
+        // Act
+        issueService.updateIssueStatus(project_test, user_test, issue, newStatus);
+
+        // Assert
+        assertThat(issue.getStatus()).isEqualTo(IssueStatus.FIXED);
+        assertThat(issue.getFixer()).isEqualTo(user_test);
+        verify(issueRepository).save(issue, project_test);
+    }
+
+    @Test
+    @DisplayName("Update issue status to RESOLVED without setting fixer")
+    void testUpdateIssueStatusToResolved() {
+        // Arrange
+        IssueStatus newStatus = IssueStatus.RESOLVED;
+        Issue issue = project_test.getIssues().get(0);
+        // Act
+        issueService.updateIssueStatus(project_test, user_test, issue, newStatus);
+
+        // Assert
+        assertThat(issue.getStatus()).isEqualTo(IssueStatus.RESOLVED);
+        assertThat(issue.getFixer()).isNull();  // Assuming getFixer returns null if no fixer is set
+        verify(issueRepository).save(issue, project_test);
+    }
+    @Test
+    @DisplayName("Add a comment to the first issue and verify")
+    void testAddCommentToIssue() {
+        // Arrange
+        Issue targetIssue = project_test.getIssues().get(0);
+        String commentTitle = "New Comment";
+        String commentText = "This is a new comment.";
+
+        // Act
+        issueService.addComment(project_test, user_test, targetIssue, commentTitle, commentText);
+
+        // Assert
+        assertThat(targetIssue.getComments()).hasSize(3); // Assuming there were already 2 comments from setup
+        Comment addedComment = targetIssue.getComments().get(2); // The new comment should be at index 2
+        assertThat(addedComment.getCommentTitle()).isEqualTo(commentTitle);
+        assertThat(addedComment.getText()).isEqualTo(commentText);
+        assertThat(addedComment.getAuthor()).isEqualTo(user_test);
+        assertThat(addedComment.getTimestamp()).isNotNull();
+
+        verify(issueRepository).save(targetIssue, project_test);
+        verify(commentRepository).save(addedComment, targetIssue);
+    }
+}
+package com.se14.service.implement1;
+
+import com.se14.domain.*;
+import com.se14.repository.ProjectRepository;
+import com.se14.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+public class ProjectServiceImplementTest {
+
+    @Mock
+    private ProjectRepository projectRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @InjectMocks
+    private ProjectServiceImplement projectService;
+
+    private List<Project> projects;
+    private List<User> users;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        projects = new ArrayList<>();
+        users = new ArrayList<>();
+
+        // Create Users
+        for (int i = 0; i < 5; i++) {
+            User user = new User();
+            user.setUserId(i);
+            user.setUsername("user" + i);
+            user.setEmail("user" + i + "@example.com");
+            users.add(user);
+        }
+
+        // Create Projects
+        for (int i = 0; i < 3; i++) {
+            Project project = new Project();
+            project.setProjectId(i);
+            project.setProjectTitle("Project " + i);
+            project.setProjectDescription("Description for Project " + i);
+            //project.setMembers(new HashMap<>());
+            //project.setIssues(new ArrayList<>());
+            projects.add(project);
+        }
+
+        /*
+        // Assign Users to Projects
+
+        for (Project project : projects) {
+            project.setMembers(new HashMap<>());
+            for (User user : users) {
+                project.getMembers().put(user, Arrays.asList(UserRole.DEVELOPER, UserRole.TESTER));
+            }
+            project.getMembers().get(users.get(0)).add(UserRole.ADMIN); //0번 유저에게 어드민주기
+        }*/
+        for (Project project : projects) {
+            project.setMembers(new HashMap<>());
+            for (User user : users) {
+                List<UserRole> roles = new ArrayList<>(Arrays.asList(UserRole.DEVELOPER, UserRole.TESTER));
+                project.getMembers().put(user, roles);
+            }
+            project.getMembers().get(users.get(0)).add(UserRole.ADMIN); // Add ADMIN role to the first user
+        }
+
+
+        // Assign Issues to Projects
+        Calendar cal = Calendar.getInstance();
+        cal.set(2024, Calendar.MAY, 10, 0, 0, 0); // Starting from May 10, 2024
+        for (Project project : projects) {
+            for (int j = 0; j < 10; j++) {
+                Issue issue = new Issue();
+                issue.setTitle("Issue " + j);
+                issue.setDescription("Description " + j);
+                issue.setPriority(IssuePriority.MAJOR);
+                issue.setStatus(IssueStatus.NEW);
+                issue.setReporter(users.get(j % users.size()));
+                issue.setReportedDate(cal.getTime());
+
+                // Add comments to each issue
+                List<Comment> comments = new ArrayList<>();
+                comments.add(new Comment("Comment 1 for Issue " + j, "Content 1 for Issue " + j, new Date(), users.get(j % users.size())));
+                comments.add(new Comment("Comment 2 for Issue " + j, "Content 2 for Issue " + j, new Date(), users.get((j + 1) % users.size())));
+                issue.setComments(comments);
+
+                project.getIssues().add(issue);
+                cal.add(Calendar.DATE, 1);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("List Projects returns all projects")
+    void testListProjects() {
+        when(projectRepository.findAll()).thenReturn(projects);
+
+        List<Project> foundProjects = projectService.listProject();
+
+        assertThat(foundProjects).hasSize(3).containsAll(projects);
+        verify(projectRepository).findAll();
+    }
+
+    @Test
+    @DisplayName("Create Project and add creator as Admin")
+    void testCreateProject() {
+        User creator = users.get(1);
+        String projectName = "New Project";
+        String projectDescription = "New Project Description";
+
+        Project createdProject = projectService.createProject(creator, projectName, projectDescription);
+
+        assertThat(createdProject).isNotNull();
+        assertThat(createdProject.getProjectTitle()).isEqualTo(projectName);
+        assertThat(createdProject.getProjectDescription()).isEqualTo(projectDescription);
+        assertThat(createdProject.getMembers()).containsKey(creator);
+        assertThat(createdProject.getMembers().get(creator)).contains(UserRole.ADMIN);
+
+        verify(projectRepository, atLeastOnce()).save(createdProject);
+    }
+
+    @Test
+    @DisplayName("Add Member to Project")
+    void testAddMemberToProject() {
+        Project project = projects.get(0);
+        User user = users.get(1);
+        UserRole role = UserRole.TESTER;
+        UserRole role2 = UserRole.PROJECT_LEAD;
+
+        projectService.addMemberToProject(project, user, role);
+        projectService.addMemberToProject(project, user, role2);
+
+        assertThat(project.getMembers()).containsKey(user);
+        assertThat(project.getMembers().get(user)).contains(role);
+        assertThat(project.getMembers().get(user)).contains(role2);
+
+        verify(projectRepository, atLeastOnce()).save(project);
+
+    }
+
+    @Test
+    @DisplayName("Get Statistic by Date")
+    void testGetStatistic() {
+        Project project = projects.get(0);
+
+        Map<Calendar, List<Issue>> statistics = projectService.getStatistic(project);
+
+        assertThat(statistics).isNotNull();
+        assertThat(statistics).hasSize(10);
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    @DisplayName("List Users by Role")
+    void testListUserByRole() {
+        Project project = projects.get(0);
+        UserRole role = UserRole.TESTER;
+
+        List<User> usersWithRole = projectService.listUser(project, role);
+
+        assertThat(usersWithRole).isNotEmpty();
+        assertThat(usersWithRole).hasSize(5);  // Assuming 5 users were added to each project in the setup
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    @DisplayName("Check if Project has User")
+    void testHasUser() {
+        Project project = projects.get(0);
+        User user = users.get(0);
+
+        boolean result = projectService.hasUser(project, user);
+
+        assertThat(result).isTrue();
+        verify(projectRepository, never()).save(any(Project.class));
+    }
+
+    @Test
+    @DisplayName("Handle exception in listProject")
+    void testListProjectException() {
+        // Arrange
+        when(projectRepository.findAll()).thenThrow(new RuntimeException("Database error"));
+
+        // Act & Assert
+        assertThrows(RuntimeException.class, () -> projectService.listProject());
+        verify(projectRepository).findAll();
+    }
+    @Test
+    @DisplayName("Handle exception in createProject")
+    void testCreateProjectException() {
+        // Arrange
+        User creator = users.get(0);
+        String projectName = "New Project";
+        String projectDescription = "New Project Description";
+
+        when(projectRepository.save(any(Project.class))).thenThrow(new RuntimeException("Database error"));
+
+        // Act & Assert
+        assertThrows(RuntimeException.class, () -> projectService.createProject(creator, projectName, projectDescription));
+        verify(projectRepository).save(any(Project.class));
+    }
+
+    @Test
+    @DisplayName("Handle exception in addMemberToProject")
+    void testAddMemberToProjectException() {
+        // Arrange
+        Project project = projects.get(0);
+        User user = users.get(1);
+        UserRole role = UserRole.TESTER;
+
+        doThrow(new RuntimeException("Database error")).when(projectRepository).save(any(Project.class));
+
+        // Act & Assert
+        assertThrows(RuntimeException.class, () -> projectService.addMemberToProject(project, user, role));
+        verify(projectRepository).save(any(Project.class));
+    }
+    @Test
+    @DisplayName("Handle empty issues in getStatistic")
+    void testGetStatisticEmptyIssues() {
+        // Arrange
+        Project project = projects.get(0);
+        project.setIssues(new ArrayList<>()); // No issues
+
+        // Act
+        Map<Calendar, List<Issue>> statistics = projectService.getStatistic(project);
+
+        // Assert
+        assertThat(statistics).isEmpty();
+    }
+    @Test
+    @DisplayName("Handle no users with specified role in listUser")
+    void testListUserNoRole() {
+        // Arrange
+        Project project = projects.get(0);
+        UserRole role = UserRole.PROJECT_LEAD; // Assuming no PL in the setup
+
+        // Act
+        List<User> usersWithRole = projectService.listUser(project, role);
+
+        // Assert
+        assertThat(usersWithRole).isEmpty();
+    }
+    @Test
+    @DisplayName("Handle user not in project in hasUser")
+    void testHasUserNotInProject() {
+        // Arrange
+        Project project = projects.get(0);
+        User userNotInProject = new User();
+        userNotInProject.setUserId(999);
+        userNotInProject.setUsername("notInProject");
+
+        // Act
+        boolean result = projectService.hasUser(project, userNotInProject);
+
+        // Assert
+        assertThat(result).isFalse();
+    }
+
+
+
+
+}
+package com.se14.service.implement1;
+
+import com.se14.domain.Project;
+import com.se14.domain.User;
+import com.se14.domain.UserRole;
+import com.se14.repository.UserRepository;
+import com.se14.service.SecurityService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+public class SecurityServiceImplementTest {
+
+    @Mock
+    private UserRepository userRepository;
+
+    private SecurityService securityService;
+
+    private User user;
+    private Project project;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        // Initialize the securityService with the mocked userRepository
+        securityService = new SecurityServiceImplement(userRepository);
+
+        user = new User();
+        user.setUserId(1);
+        user.setUsername("testUser");
+
+        project = new Project();
+        project.setProjectId(1);
+        project.setProjectTitle("Test Project");
+        project.setMembers(new HashMap<>());
+        project.getMembers().put(user, Arrays.asList(UserRole.DEVELOPER, UserRole.TESTER));
+    }
+
+    @Test
+    @DisplayName("User has access to project with required role")
+    void testHasAccessSuccess() {
+        // Act
+        boolean result = securityService.hasAccess(user, project, UserRole.DEVELOPER);
+
+        // Assert
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("User does not have access to project with required role")
+    void testHasAccessFailure() {
+        // Act
+        boolean result = securityService.hasAccess(user, project, UserRole.ADMIN);
+
+        // Assert
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    @DisplayName("User is authenticated")
+    void testIsAuthenticatedSuccess() {
+        // Arrange
+        when(userRepository.findById(user.getUserId())).thenReturn(Optional.of(user));
+
+        // Act
+        boolean result = securityService.isAuthenticated(user);
+
+        // Assert
+        assertThat(result).isTrue();
+        verify(userRepository).findById(user.getUserId());
+    }
+
+    @Test
+    @DisplayName("User is not authenticated")
+    void testIsAuthenticatedFailure() {
+        // Arrange
+        when(userRepository.findById(user.getUserId())).thenReturn(Optional.empty());
+        // Act
+        boolean result = securityService.isAuthenticated(user);
+        // Assert
+        assertThat(result).isFalse();
+        verify(userRepository).findById(user.getUserId());
+    }
+}
+package com.se14.service.implement1;
+
+import com.se14.domain.Project;
+import com.se14.domain.User;
+import com.se14.domain.UserSession;
+import com.se14.domain.Issue;
+import com.se14.service.SessionService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class SessionServiceImplementTest {
+
+    private SessionService sessionService;
+
+    private User user;
+    private Project project;
+    private Issue issue;
+
+    @BeforeEach
+    void setUp() {
+        sessionService = new SessionServiceImplement();
+
+        user = new User();
+        user.setUserId(1);
+        user.setUsername("testUser");
+
+        project = new Project();
+        project.setProjectId(1);
+        project.setProjectTitle("Test Project");
+
+        issue = new Issue();
+        issue.setTitle("Test Issue");
+    }
+
+    @Test
+    @DisplayName("Get current session")
+    void testGetCurrentSession() {
+        // Act
+        UserSession userSession = sessionService.getCurrentSession();
+
+        // Assert
+        assertThat(userSession).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Set current user")
+    void testSetCurrentUser() {
+        // Act
+        sessionService.setCurrentUser(user);
+
+        // Assert
+        UserSession userSession = sessionService.getCurrentSession();
+        assertThat(userSession.getCurrentUser()).isEqualTo(user);
+    }
+
+    @Test
+    @DisplayName("Set current project")
+    void testSetCurrentProject() {
+        // Act
+        sessionService.setCurrentProject(project);
+
+        // Assert
+        UserSession userSession = sessionService.getCurrentSession();
+        assertThat(userSession.getCurrentProject()).isEqualTo(project);
+    }
+
+    @Test
+    @DisplayName("Set current issue")
+    void testSetCurrentIssue() {
+        // Act
+        sessionService.setCurrentIssue(issue);
+
+        // Assert
+        UserSession userSession = sessionService.getCurrentSession();
+        assertThat(userSession.getCurrentIssue()).isEqualTo(issue);
+    }
+}
+package com.se14.service.implement1;
+
+import com.se14.domain.User;
+import com.se14.repository.UserRepository;
+import com.se14.service.UserService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+public class UserServiceImplementTest {
+
+    @Mock
+    private UserRepository userRepository;
+
+    private UserService userService;
+
+    private User user;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        // Initialize the userService with the mocked userRepository
+        userService = new UserServiceImplement(userRepository);
+
+        user = new User("password123");
+        user.setUserId(1);
+        user.setUsername("testUser");
+        user.setEmail("testUser@example.com");
+    }
+
+    @Test
+    @DisplayName("User authentication successful")
+    void testAuthenticateUserSuccess() {
+        // Arrange
+        when(userRepository.findByUsername(user.getUsername())).thenReturn(user);
+
+        // Act
+        User authenticatedUser = userService.authenticateUser(user.getUsername(), user.getPassword());
+
+        // Assert
+        assertThat(authenticatedUser).isNotNull();
+        assertThat(authenticatedUser.getUsername()).isEqualTo(user.getUsername());
+        verify(userRepository).findByUsername(user.getUsername());
+    }
+
+    @Test
+    @DisplayName("User authentication failed due to incorrect password")
+    void testAuthenticateUserFailureIncorrectPassword() {
+        // Arrange
+        when(userRepository.findByUsername(user.getUsername())).thenReturn(user);
+
+        // Act
+        User authenticatedUser = userService.authenticateUser(user.getUsername(), "wrongPassword");
+
+        // Assert
+        assertThat(authenticatedUser).isNull();
+        verify(userRepository).findByUsername(user.getUsername());
+    }
+
+    @Test
+    @DisplayName("User authentication failed due to non-existing username")
+    void testAuthenticateUserFailureNonExistingUsername() {
+        // Arrange
+        when(userRepository.findByUsername(user.getUsername())).thenReturn(null);
+
+        // Act
+        User authenticatedUser = userService.authenticateUser(user.getUsername(), user.getPassword());
+
+        // Assert
+        assertThat(authenticatedUser).isNull();
+        verify(userRepository).findByUsername(user.getUsername());
+    }
+
+    @Test
+    @DisplayName("Add new user successfully")
+    void testAddNewUserSuccess() {
+        // Arrange
+        String username = "newUser";
+        String password = "newPassword";
+        String email = "newUser@example.com";
+
+        // Act
+        userService.addNewUser(username, password, email);
+
+        // Assert
+        verify(userRepository).save(any(User.class));
+    }
+}

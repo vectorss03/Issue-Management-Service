@@ -8,6 +8,7 @@ import ProjectUserList from "@/views/Board/ProjectUserList.vue";
 import IssueDeatil from "@/views/Board/Issue/IssueDeatil.vue";
 import LogIn from "@/views/LogIn.vue";
 import CreateAccount from "@/views/CreateAccount.vue";
+import store from "@/vuex/store";
 
 const routes = [
     {
@@ -31,6 +32,14 @@ const routes = [
         name: 'project',
         component: ProjectBoard,
         redirect: { name: 'issues' },
+        beforeEnter: (to, from, next) => {
+            if (store.getters.isAuthenticated) {
+                next()
+            } else {
+                alert("You must be logged in to visit this page.")
+                next('/login')
+            }
+        },
         children: [
             {
                 path: 'home',

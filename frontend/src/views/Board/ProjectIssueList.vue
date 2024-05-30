@@ -22,7 +22,7 @@
 
           <button id="statusDropdownButton" data-dropdown-toggle="statusDropdown"
                   class="mx-2.5 text-black focus:outline-none font-medium rounded text-sm px-2 py-2.5 text-center inline-flex items-center"
-                  :class="statusSelected ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
+                  :class="filter.status ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
                   type="button" data-dropdown-offset-skidding="50">
             Status
             <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -39,20 +39,25 @@
               <li v-for="(status, index) in ['New', 'Assigned', 'Fixed', 'Resolved', 'Closed', 'Reopened']"
                   :key="index">
                 <div class="flex items-center p-2 rounded hover:bg-gray-100">
-                  <input :id="`status-` + status" type="checkbox" :value="status.toUpperCase()"
-                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-0"
+                  <input :id="`status-` + status" type="radio" :value="status.toUpperCase()"
+                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                          v-model="filter.status">
                   <label :for="`status-` + status"
                          class="w-full ms-2 text-sm font-medium text-gray-900 rounded">{{ status }}</label>
                 </div>
               </li>
             </ul>
+            <label
+                class="flex items-center p-3 text-sm font-medium text-gray-700 border-t border-gray-200 rounded-b-lg bg-gray-50  hover:bg-gray-100 hover:underline"
+                @click="filter.status = null">
+              Cancel Selection
+            </label>
           </div>
 
 
           <button id="priorityDropdownButton" data-dropdown-toggle="priorityDropdown"
                   class="mx-2.5 text-black focus:outline-none font-medium rounded text-sm px-2 py-2.5 text-center inline-flex items-center"
-                  :class="prioritySelected ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
+                  :class="filter.priority ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
                   type="button" data-dropdown-offset-skidding="47">
             Priority
             <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -68,14 +73,19 @@
             <ul class="p-3 space-y-1 text-sm text-gray-700" aria-labelledby="dropdownBgHoverButton">
               <li v-for="(priority, index) in ['Blocker', 'Critical', 'Major', 'Minor', 'Trivial']" :key="index">
                 <div class="flex items-center p-2 rounded hover:bg-gray-100">
-                  <input :id="`priority-` + priority" type="checkbox" :value="priority.toUpperCase()"
-                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-0"
+                  <input :id="`priority-` + priority" type="radio" :value="priority.toUpperCase()"
+                         class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                          v-model="filter.priority">
                   <label :for="`priority-` + priority"
                          class="w-full ms-2 text-sm font-medium text-gray-900 rounded">{{ priority }}</label>
                 </div>
               </li>
             </ul>
+            <label
+                class="flex items-center p-3 text-sm font-medium text-gray-700 border-t border-gray-200 rounded-b-lg bg-gray-50  hover:bg-gray-100 hover:underline"
+                @click="filter.priority = null">
+              Cancel Selection
+            </label>
           </div>
 
 
@@ -360,31 +370,25 @@
 
     </div>
 
-    <table class="w-full text-sm text-left">
+    <table class="w-full text-sm text-left table-fixed">
       <thead class="text-sm border-b-2">
       <tr>
-        <th scope="col" class="px-4 py-3 w-2/12">Title</th>
+        <th scope="col" class="px-4 py-3 w-2/12 min-w-72">Title</th>
         <th scope="col" class="px-4 py-3 w-4/12">Description</th>
         <th scope="col" class="px-4 py-3 w-1/12">Status</th>
         <th scope="col" class="px-4 py-3 w-1/12">Priority</th>
         <th scope="col" class="px-4 py-3 w-1/12">Assignee</th>
         <th scope="col" class="px-4 py-3 w-1/12">Fixer</th>
         <th scope="col" class="px-4 py-3 w-1/12">Reporter</th>
-        <th scope="col" class="px-4 py-3 w-1/12">ReportedDate</th>
+        <th scope="col" class="px-4 py-3 w-1/12">Reported Date</th>
       </tr>
       </thead>
       <tbody>
       <tr v-for="issue in issueList" :key="issue.issue_id" class="border-b-2 hover:bg-gray-100">
-        <th scope="row" class="px-4 py-3 font-medium text-blue-700 hover:underline whitespace-nowrap w-2/12 max-w-0">
-          <router-link :to="{ name: 'issue-detail', params: { issue_id: issue.issue_id } }">{{
-              issue.title
-            }}
-          </router-link>
+        <th scope="row" class="px-4 py-3 font-medium text-blue-700 hover:underline whitespace-nowrap w-2/12 min-w-72 truncate">
+          <router-link :to="{ name: 'issue-detail', params: { issue_id: issue.issue_id } }">{{issue.title }}</router-link>
         </th>
-        <td class="px-4 py-3 w-4/12">{{ issue.description }}</td>
-        <!--        <td class="px-4 py-3 w-1/12">-->
-        <!--          <span class="px-5 py-1 bg-green-300 rounded-full text-green-800 font-bold dfle">{{issue.status}}</span>-->
-        <!--        </td>-->
+        <td class="px-4 py-3 w-4/12 truncate">{{ issue.description }}</td>
         <td class="px-4 py-3 w-1/12">
           <StatusBadge :status="issue.status.toUpperCase()"/>
         </td>
@@ -395,7 +399,7 @@
         <td class="px-4 py-3 w-1/12">{{ issue.assignee }}</td>
         <td class="px-4 py-3 w-1/12">{{ issue.fixer }}</td>
         <td class="px-4 py-3 w-1/12">{{ issue.reporter }}</td>
-        <td class="px-4 py-3 w-1/12">{{ issue.reported_date }}</td>
+        <td class="px-4 py-3 w-1/12 truncate">{{ issue.reported_date }}</td>
       </tr>
       </tbody>
     </table>
@@ -406,14 +410,14 @@
 <script setup>
 import {computed, inject, onMounted, ref, watch} from 'vue'
 import {initFlowbite} from 'flowbite'
-import {useRoute} from "vue-router";
+import {useRoute, useRouter} from "vue-router";
 import StatusBadge from "@/components/StatusBadge.vue";
 import PriorityBadge from "@/components/PriorityBadge.vue";
-import qs from "qs";
 import store from "@/vuex/store";
 
 const axios = inject('axios')
 const route = useRoute()
+const router = useRouter()
 
 const myName = computed(() => store.state.username)
 const userList = ref([
@@ -433,23 +437,18 @@ const issueForm = {
 
 const filter = ref({
   "keyword": "",
-  "status": [],
-  "priority": [],
+  "status": null,
+  "priority": null,
   "assignee": "",
   "fixer": "",
   "reporter": "",
 })
 
-const statusSelected = computed(() => {
-  return filter.value.status.length > 0
-})
-const prioritySelected = computed(() => {
-  return filter.value.priority.length > 0
-})
 let searchTimeout = null
 
 onMounted(() => {
   initFlowbite();
+  getRoles()
   getIssues()
   getUsers()
 })
@@ -459,12 +458,14 @@ watch(filter.value, () => searchIssues())
 function resetFilter() {
   filter.value = {
     "keyword": "",
-    "status": [],
-    "priority": [],
+    "status": null,
+    "priority": null,
     "assignee": "",
     "fixer": "",
     "reporter": "",
   }
+  watch(filter.value, () => searchIssues())
+  searchIssues()
 }
 
 function searchUsers(event) {
@@ -482,23 +483,34 @@ function searchIssues() {
 }
 
 function search() {
-  console.log("send query to server")
   console.log(filter.value.status)
-  axios.get('/api/test', {
-    params: filter.value,
-    paramsSerializer: params => {
-      return qs.stringify(params, {arrayFormat: "comma"});
-    }
+  router.replace({ path: '/projects/' + route.params.project_id + '/issues', query: filter.value })
+
+  axios.get('/api/projects/' + route.params.project_id + '/issues', {
+    params: filter.value
   }).then(response => {
     console.log(response)
+    issueList.value = response.data
   }).catch(error => {
-    // console.log(error)
+    console.log(error)
     if (error.message.indexOf('Network Error') > -1) {
       alert('Network Error\nPlease Try again later')
     }
   })
 }
 
+function getRoles() {
+  axios.get('/api/projects/' + route.params.project_id + '/roles')
+      .then(response => {
+        console.log(response.data)
+        store.commit("setRoles", response.data)
+      }).catch(error => {
+    console.log(error)
+    if (error.message.indexOf('Network Error') > -1) {
+      alert('Network Error\nPlease Try again later')
+    }
+  })
+}
 
 function getIssues() {
   axios.get('/api/projects/' + route.params.project_id + '/issues')

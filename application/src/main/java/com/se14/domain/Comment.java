@@ -7,7 +7,7 @@ public class Comment {
     private String text;
     private Date timestamp;
     private User author;
-    private long id;
+    private int id;
 
     @Override
     public String toString()
@@ -36,7 +36,7 @@ public class Comment {
     }
 
     //DB 구현을 위해 CommentID 따로 추가
-    public void setID(long id){this.id = id;}
+    public void setID(int id){this.id = id;}
 
     public long getID(){ return this.id;}
 
