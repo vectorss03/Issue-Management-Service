@@ -9,10 +9,10 @@ import java.util.*;
 @Repository
 public class UserRepositoryFake implements UserRepository {
 
-    private final Map<Long, User> users = new HashMap<>();
+    private final Map<Integer, User> users = new HashMap<>();
 
     public UserRepositoryFake() {
-        for (long i = 1; i <= 9; i++) {
+        for (int i = 1; i <= 9; i++) {
             User user = new User("password"+i);
             user.setUserId((int) i);
             user.setUsername("user" + i);
@@ -24,15 +24,18 @@ public class UserRepositoryFake implements UserRepository {
     @Override
     public User save(User user) {
         if(user.getUserId()==null) {
-            long newId = users.keySet().stream().mapToLong(Long::longValue).max().orElse(0) + 1;
+            Integer newId = users.keySet().stream()
+                    .mapToInt(Integer::intValue)
+                    .max()
+                    .orElse(0) + 1;
             user.setUserId((int) newId);
         }
-        users.put(user.getUserId().longValue(), user);
+        users.put(user.getUserId(), user);
         return user;
     }
 
     @Override
-    public Optional<User> findById(long id) {
+    public Optional<User> findById(Integer id) {
         return Optional.ofNullable(users.get(id));
     }
 

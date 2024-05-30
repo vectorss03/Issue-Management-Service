@@ -35,7 +35,7 @@ public class ProjectDB implements ProjectRepository {
         }
 
         //DB 상에 프로젝트가 이미 있을 때
-        if (projectExists((long)project.getProjectId())) {
+        if (projectExists(project.getProjectId())) {
             updateProject(project);
         } else {
             insertProject(project);
@@ -55,10 +55,10 @@ public class ProjectDB implements ProjectRepository {
         return project;
     }
 
-    private boolean projectExists(Long projectId) {
+    private boolean projectExists(Integer projectId) {
         String sql = "SELECT COUNT(*) FROM projects WHERE project_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, projectId);
+            statement.setInt(1, projectId);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 return resultSet.getInt(1) > 0;
@@ -86,7 +86,7 @@ public class ProjectDB implements ProjectRepository {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, project.getProjectTitle());
             statement.setString(2, project.getProjectDescription());
-            statement.setLong(3, project.getProjectId());
+            statement.setInt(3, project.getProjectId());
             statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -192,11 +192,11 @@ public class ProjectDB implements ProjectRepository {
 
 
     @Override
-    public Optional<Project> findById(long id) {
+    public Optional<Project> findById(Integer id) {
         String sql = "SELECT * FROM projects WHERE project_id = ?";
         Project project = null;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, id);
+            statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 project = new Project();

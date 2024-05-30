@@ -39,7 +39,7 @@ public class UserDB implements UserRepository {
             //새로운 유저 DB에 insert.
             String sql = "INSERT INTO users (user_id, username, password, email) VALUES (?, ?, ?, ?)";
             try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                statement.setLong(1, user.getUserId());
+                statement.setInt(1, user.getUserId());
                 statement.setString(2, user.getUsername());
                 statement.setString(3, user.getPassword());
                 statement.setString(4, user.getEmail());
@@ -72,10 +72,10 @@ public class UserDB implements UserRepository {
 
 
     @Override
-    public Optional<User> findById(long id) {
+    public Optional<User> findById(Integer id) {
         String sql = "SELECT * FROM users WHERE user_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, id);
+            statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 return Optional.of(mapResultSetToUser(resultSet));
@@ -130,7 +130,7 @@ public class UserDB implements UserRepository {
 
     private User mapResultSetToUser(ResultSet resultSet) throws SQLException {
         return new User(
-                (int) resultSet.getLong("user_id"),
+                resultSet.getInt("user_id"),
                 resultSet.getString("username"),
                 resultSet.getString("password"),
                 resultSet.getString("email")
