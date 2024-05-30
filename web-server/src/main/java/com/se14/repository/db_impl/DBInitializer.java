@@ -18,9 +18,10 @@ public class DBInitializer {
 
             // Initialize repository implementations with the connection
 
-            CommentDB commentDB = new CommentDB(connection);
+
             UserDB userDB = new UserDB(connection);
-            IssueDB issueDB = new IssueDB(connection,commentDB);
+            CommentDB commentDB = new CommentDB(connection,userDB);
+            IssueDB issueDB = new IssueDB(connection,commentDB,userDB);
             ProjectDB projectDB = new ProjectDB(connection,userDB,commentDB);
 
 

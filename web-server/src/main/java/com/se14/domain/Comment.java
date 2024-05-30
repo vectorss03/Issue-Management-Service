@@ -38,7 +38,7 @@ public class Comment {
     //DB 구현을 위해 CommentID 따로 추가
     public void setID(int id){this.id = id;}
 
-    public long getID(){ return this.id;}
+    public int getID(){ return this.id;}
 
 
     // Getter and setter for text

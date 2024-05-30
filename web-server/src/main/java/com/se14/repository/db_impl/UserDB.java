@@ -19,13 +19,15 @@ public class UserDB implements UserRepository {
 
     @Override
     public User save(User user) {
-        // username 이미 있는지 확인
-        User existingUser_ = findByUsername(user.getUsername());
-        if (existingUser_ != null) {
-            //username이 이미 있으면 exception.
-            throw new IllegalArgumentException("Username already exists");
-        }
-        if (user.getUserId() == 0) {
+
+        //막 생성된 유저, 저장이 안된 유저.
+        if (user.getUserId() == null || user.getUserId() <= -1) {
+            // username 이미 있는지 확인
+            User existingUser = findByUsername(user.getUsername());
+            if (existingUser != null) {
+                //username이 이미 있으면 exception.
+                throw new IllegalArgumentException("Username already exists");
+            }
             user.setUserId(generateUniqueUserId());
         }
 
@@ -37,9 +39,10 @@ public class UserDB implements UserRepository {
             String sql = "INSERT INTO users (user_id, username, password, email) VALUES (?, ?, ?, ?)";
             try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 statement.setLong(1, user.getUserId());
+
                 statement.setString(2, user.getUsername());
                 statement.setString(3, user.getPassword());
-                statement.setString(4, user.getEmail());
+                setNullableString(statement,4,user.getEmail());
                 statement.executeUpdate();
 
                 return user;
@@ -50,13 +53,23 @@ public class UserDB implements UserRepository {
         }
     }
 
+    private void setNullableString(PreparedStatement statement, int index, String value) throws SQLException {
+        if (value != null) {
+            statement.setString(index, value);
+        }else{
+            statement.setNull(index, Types.VARCHAR);
+        }
+    }
 
+
+    //유저 정보를 query를 user_id로 변경.
     private User update(User user) {
-        String sql = "UPDATE users SET password = ?, email = ? WHERE username = ?";
+        String sql = "UPDATE users SET password = ?, email = ?, username = ? WHERE user_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, user.getPassword());
             statement.setString(2, user.getEmail());
             statement.setString(3, user.getUsername());
+            statement.setInt(4, user.getUserId());
             statement.executeUpdate();
             return user;
         } catch (SQLException ex) {
@@ -64,6 +77,7 @@ public class UserDB implements UserRepository {
         }
         return null;
     }
+
 
     @Override
     public Optional<User> findById(long id) {

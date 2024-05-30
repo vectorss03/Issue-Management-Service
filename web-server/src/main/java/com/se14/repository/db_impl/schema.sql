@@ -6,7 +6,7 @@ CREATE TABLE users (
                        user_id INT PRIMARY KEY,
                        username VARCHAR(255) NOT NULL,
                        password VARCHAR(255) NOT NULL,
-                       email VARCHAR(255) NOT NULL
+                       email VARCHAR(255)
 );
 
 CREATE TABLE projects (
@@ -36,7 +36,7 @@ CREATE TABLE issues (
                         issue_id INT PRIMARY KEY,
                         title VARCHAR(255) NOT NULL,
                         description TEXT NOT NULL,
-                        status ENUM('ASSIGNED', 'FIXED', 'RESOLVE', 'CLOSED', 'REOPENED') NOT NULL,
+                        status ENUM('New','ASSIGNED', 'FIXED', 'RESOLVE', 'CLOSED', 'REOPENED') NOT NULL,
                         priority ENUM('BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'TRIVIAL') NOT NULL,
                         date DATE NOT NULL,
                         project_id VARCHAR(255),
