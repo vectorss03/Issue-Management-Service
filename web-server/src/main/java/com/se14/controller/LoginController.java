@@ -2,7 +2,6 @@ package com.se14.controller;
 
 import com.se14.domain.User;
 import com.se14.service.UserService;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,7 +33,7 @@ public class LoginController {
 
         if (user != null) {
             HttpSession session = request.getSession();
-            session.setAttribute("username", username);
+            session.setAttribute("USER", user);
             return new ResponseEntity<>(HttpStatus.OK);
         }
 
