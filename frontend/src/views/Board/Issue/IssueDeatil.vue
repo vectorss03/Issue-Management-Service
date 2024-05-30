@@ -3,7 +3,7 @@
 
   <section>
     <div class="flex">
-      <div class="mr-10 w-2/3">
+      <div class="mr-5 grow">
         <div>
           <h1 class="font-bold text-3xl m-3 mb-10">{{ issue.title }}</h1>
           <h2 class="font-semibold text-m m-3">Description</h2>
@@ -30,7 +30,7 @@
           </form>
 
           <ol class="relative m-3">
-            <li class="p-4 mb-1" v-for="(comment, index) in issue.comments" :key="index">
+            <li class="p-4 mb-1" v-for="(comment, index) in comments" :key="index">
               <div class="items-center mb-3 sm:flex">
                 <time class="mx-5 mb-1 text-xs font-normal text-gray-400 sm:order-last sm:mb-0">{{ comment.timestamp }}
                 </time>
@@ -44,7 +44,7 @@
       </div>
 
 
-      <div class="w-1/3 h-fit">
+      <div class="min-w-[30rem] h-fit">
         <h2 class="font-bold text-lg my-5 mt-20">Details</h2>
         <div class="flex border rounded">
           <ol class="mx-3 py-1 items-center my-3">
@@ -111,7 +111,7 @@
               <div class="col-span-2">
                 <h3 class="font-bold text-m ps-0.5">Recommended</h3>
                 <ul class="max-h-48 overflow-y-auto py-3 px-0.5 text-sm text-gray-700 " aria-labelledby="dropdownRadioButton">
-                  <li v-for="(user, index) in searchedUserList.slice(0, 3)" :key="index">
+                  <li v-for="(user, index) in recommendedDeveloperList" :key="index">
                     <div class="flex items-center p-1 py-2 rounded hover:bg-gray-100">
                       <input :id="`assignee-${user.username}`" type="radio" :value="user.username" name="default-radio" v-model="assignDeveloperForm.developer"
                              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300">
@@ -202,12 +202,12 @@
 
                 <select id="priority" v-model="changeStateForm.newState"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:border-blue-500 block p-2.5 w-2/5">
-                  <option value="new">New</option>
-                  <option value="assigned">Assigned</option>
-                  <option value="fixed">Fixed</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
-                  <option value="reopened">Reopened</option>
+                  <option value="NEW">New</option>
+                  <option value="ASSIGNED">Assigned</option>
+                  <option value="FIXED">Fixed</option>
+                  <option value="RESOLVED">Resolved</option>
+                  <option value="CLOSED">Closed</option>
+                  <option value="REOPENED">Reopened</option>
                 </select>
               </div>
             </div>
@@ -246,6 +246,8 @@ const issue = ref({
   "reported_date": "",
 })
 
+const comments = ref([])
+
 const commentForm = {
   "content": ""
 }
@@ -263,6 +265,8 @@ const userList = ref([
     "username": ''
   }
 ])
+
+const recommendedDeveloperList = ref([])
 const searchedUserList = ref([])
 
 onMounted(() => {
@@ -274,6 +278,8 @@ onMounted(() => {
   // }
 
   getIssue()
+  getComments()
+  getRecommendedDeveloper()
   getUsers()
 })
 
@@ -285,12 +291,24 @@ function searchUsers(event) {
 }
 
 function getIssue() {
-  console.log("getIssue")
   axios.get('/api/projects/' + route.params.project_id + '/issues/' + route.params.issue_id)
       .then(response => {
         console.log(response.data)
         issue.value = response.data
         changeStateForm.newState = issue.value.status
+      }).catch(error => {
+    console.log(error)
+    if (error.message.indexOf('Network Error') > -1) {
+      alert('Network Error\nPlease Try again later')
+    }
+  })
+}
+
+function getComments() {
+  axios.get('/api/projects/' + route.params.project_id + '/issues/' + route.params.issue_id + '/comments')
+      .then(response => {
+        console.log(response.data)
+        comments.value = response.data
       }).catch(error => {
     console.log(error)
     if (error.message.indexOf('Network Error') > -1) {
@@ -313,12 +331,25 @@ function getUsers() {
   })
 }
 
+function getRecommendedDeveloper() {
+  axios.get('/api/projects/' + route.params.project_id + '/issues/' + route.params.issue_id + '/assignee/recommended')
+      .then(response => {
+        console.log(response.data)
+        recommendedDeveloperList.value = response.data
+      }).catch(error => {
+    console.log(error)
+    if (error.message.indexOf('Network Error') > -1) {
+      alert('Network Error\nPlease Try again later')
+    }
+  })
+}
+
 function postComment() {
   axios.post('/api/projects/' + route.params.project_id + '/issues/' + route.params.issue_id + '/comments', {
     "content": commentForm.content
   }).then((response) => {
     console.log(response.data)
-    getIssue()
+    getComments()
     commentForm.content = ""
   }).catch(error => {
     console.log(error)
