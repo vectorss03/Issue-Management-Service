@@ -86,6 +86,6 @@ public class IssueServiceImplement implements IssueService{
         commentRepository.save(newComment, issue);
     }
     @Override
-    Issue findIssueById(Long id){ return issueRepository.findById(id).orElse(null); }
+    public Issue findIssueById(Long id){ return issueRepository.findById(id).orElse(null); }
 
 }
