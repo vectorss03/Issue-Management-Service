@@ -13,8 +13,8 @@ import java.util.*;
 @Repository
 public class IssueRepositoryFake implements IssueRepository {
 
-    private final Map<Long, Issue> issues = new HashMap<>();
-    private long currentId = 1;
+    private final Map<Integer, Issue> issues = new HashMap<>();
+    private Integer currentId = 1;
     public ProjectRepository projectRepositoryFake;
     public CommentRepository commentRepositoryFake;
 
@@ -122,7 +122,7 @@ public class IssueRepositoryFake implements IssueRepository {
     }
 
     @Override
-    public Optional<Issue> findById(long id) {
+    public Optional<Issue> findById(Integer id) {
         return Optional.ofNullable(issues.get(id));
     }
 

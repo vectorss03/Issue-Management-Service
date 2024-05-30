@@ -7,7 +7,7 @@ import java.util.List;
 
 public class Issue {
 
-    private int issueId = -1;
+    private Integer issueId = -1;
     private String title;
     private String description;
     private IssueStatus status;

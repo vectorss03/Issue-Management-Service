@@ -11,17 +11,17 @@ import java.util.*;
 public class CommentRepositoryFake implements CommentRepository {
 
     private final Map<Long, Comment> comments = new HashMap<>();
-    private long currentId = 1;
+    private Integer currentId = 1;
 
     @Override
     public Comment save(Comment comment, Issue issue) {
-        comments.put(currentId++, comment);
+        comments.put(Long.valueOf(currentId++), comment);
         issue.getComments().add(comment);
         return comment;
     }
 
     @Override
-    public Optional<Comment> findById(long id) {
+    public Optional<Comment> findById(Integer id) {
         return Optional.ofNullable(comments.get(id));
     }
 

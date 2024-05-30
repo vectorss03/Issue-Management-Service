@@ -2,7 +2,9 @@ package com.se14.repository.db_impl;
 
 import com.se14.domain.Comment;
 import com.se14.domain.Issue;
+import com.se14.domain.User;
 import com.se14.repository.CommentRepository;
+import com.se14.repository.UserRepository;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -11,26 +13,24 @@ import java.util.Optional;
 
 public class CommentDB implements CommentRepository {
     private Connection connection;
+    private UserRepository userRepository;
 
-    public CommentDB(Connection connection) {
+    public CommentDB(Connection connection, UserRepository userRepository) {
         this.connection = connection;
+        this.userRepository = userRepository;
     }
 
     @Override
     public Comment save(Comment comment, Issue issue) {
-        // 코멘트가 이미 있는지 확인
-        Optional<Comment> existingComment = findById(comment.getID());
-        if (existingComment.isPresent()) {
-            // 코멘트가 있으면, update.
-            return update(comment);
-        } else {
-            // 없으면 새로 insert.
+
+        if (comment.getID() == -1) {
+
             String sql = "INSERT INTO comments (title, text, timestamp, issue_id, author_id) VALUES (?, ?, ?, ?, ?)";
             try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 statement.setString(1, comment.getCommentTitle());
                 statement.setString(2, comment.getText());
                 statement.setTimestamp(3, new Timestamp(comment.getTimestamp().getTime()));
-                statement.setLong(4, issue.getIssueId());
+                statement.setInt(4, issue.getIssueId());
                 statement.setInt(5, comment.getAuthor().getUserId());
                 statement.executeUpdate();
 
@@ -43,14 +43,23 @@ public class CommentDB implements CommentRepository {
                 ex.printStackTrace();
             }
             return null;
+        } else {
+
+            Optional<Comment> existingComment = findById(comment.getID());
+            if (existingComment.isPresent()) {
+                return update(comment);
+            }
+            return null;
         }
     }
 
+
     @Override
-    public Optional<Comment> findById(long id) {
+    public Optional<Comment> findById(Integer id) {
+
         String sql = "SELECT * FROM comments WHERE comment_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, id);
+            statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 return Optional.of(mapResultSetToComment(resultSet));
@@ -66,7 +75,7 @@ public class CommentDB implements CommentRepository {
         List<Comment> comments = new ArrayList<>();
         String sql = "SELECT * FROM comments WHERE issue_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, issue.getIssueId());
+            statement.setInt(1, issue.getIssueId());
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 comments.add(mapResultSetToComment(resultSet));
@@ -84,6 +93,14 @@ public class CommentDB implements CommentRepository {
         comment.setText(resultSet.getString("text"));
         comment.setTimestamp(resultSet.getTimestamp("timestamp"));
 
+        //comment.setAuthor 추가...
+        Optional<User> Author = userRepository.findById(resultSet.getInt("author_id"));
+        if (Author.isPresent()) {
+            comment.setAuthor(Author.get());
+        }else{
+            comment.setAuthor(null);
+        }
+
         return comment;
     }
 
@@ -93,7 +110,7 @@ public class CommentDB implements CommentRepository {
             statement.setString(1, comment.getCommentTitle());
             statement.setString(2, comment.getText());
             statement.setTimestamp(3, new Timestamp(comment.getTimestamp().getTime()));
-            statement.setLong(4, comment.getID());
+            statement.setInt(4, comment.getID());
             statement.executeUpdate();
             return comment;
         } catch (SQLException ex) {
