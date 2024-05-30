@@ -45,7 +45,7 @@ public class ProjectServiceImplement implements ProjectService {
             newProject.setProjectDescription(description);
 
             // Add the creator as an admin to the project
-            addMemberToProject(newProject, creator, UserRole.ADMIN);
+            addMemberToProject(newProject, creator, Arrays.asList(UserRole.ADMIN));
 
 
             // Save the project to the repository
@@ -60,15 +60,18 @@ public class ProjectServiceImplement implements ProjectService {
     }
 
     @Override
-    public void addMemberToProject(Project project, User user, UserRole role) {
+    public void addMemberToProject(Project project, User user, List<UserRole> roles) {
         try {
             if (!project.getMembers().containsKey(user)) {
                 project.getMembers().put(user, new ArrayList<>());
             }
-            if (!project.getMembers().get(user).contains(role)) {
-                project.getMembers().get(user).add(role);
-            }else {
-                System.out.println("User already has role");
+            List<UserRole> existingRoles = project.getMembers().get(user);
+            for (UserRole role : roles) {
+                if (!existingRoles.contains(role)) {
+                    existingRoles.add(role);
+                } else {
+                    System.out.println("User already has role: " + role);
+                }
             }
             projectRepository.save(project);
         } catch (Exception e) {
@@ -77,6 +80,7 @@ public class ProjectServiceImplement implements ProjectService {
             throw e;
         }
     }
+
 
     @Override
     public Map<String, Object> getStatistic(Project project) {
@@ -156,4 +160,14 @@ public class ProjectServiceImplement implements ProjectService {
         }
         return userProjects;
     }
+    @Override
+    public List<User> findUserByProject(Project project) {
+        Project foundProject = projectRepository.findById(project.getProjectId()).orElse(null);
+        if (foundProject == null) {
+            throw new IllegalArgumentException("Project not found");
+        }
+        return new ArrayList<>(foundProject.getMembers().keySet());
+    }
+
+
 }

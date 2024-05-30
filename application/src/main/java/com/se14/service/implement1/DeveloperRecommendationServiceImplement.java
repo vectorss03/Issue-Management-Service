@@ -22,6 +22,7 @@ public class DeveloperRecommendationServiceImplement implements DeveloperRecomme
 
     @Override
     public List<User> recommendDeveloper(Project project, Issue newIssue) {
+        /*
         List<Issue> issues = project.getIssues();
         List<String> issueTitles = new ArrayList<>();
         for (Issue issue : issues) {
@@ -29,6 +30,10 @@ public class DeveloperRecommendationServiceImplement implements DeveloperRecomme
                 issueTitles.add(issue.getTitle());
             }
         }
+        */
+        List<Issue> issues = project.getIssues().stream().filter(issue -> issue.getFixer() != null).toList();
+        List<String> issueTitles = issues.stream().map(Issue::getTitle).toList();
+
         EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(issueTitles);
         List<Embedding> issueEmbeddings = embeddingResponse.getResults();
 

@@ -132,8 +132,8 @@ public class ProjectServiceImplementTest2 {
         UserRole role = UserRole.TESTER;
         UserRole role2 = UserRole.PROJECT_LEAD;
 
-        projectService.addMemberToProject(project, user, role);
-        projectService.addMemberToProject(project, user, role2);
+        projectService.addMemberToProject(project, user, Arrays.asList(role));
+        projectService.addMemberToProject(project, user, Arrays.asList(role2));
 
         assertThat(project.getMembers()).containsKey(user);
         assertThat(project.getMembers().get(user)).contains(role);
@@ -232,7 +232,7 @@ public class ProjectServiceImplementTest2 {
         doThrow(new RuntimeException("Database error")).when(projectRepository).save(any(Project.class));
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> projectService.addMemberToProject(project, user, role));
+        assertThrows(RuntimeException.class, () -> projectService.addMemberToProject(project, user, Arrays.asList(role)));
         verify(projectRepository).save(any(Project.class));
     }
 
