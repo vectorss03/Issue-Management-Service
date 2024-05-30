@@ -15,24 +15,16 @@ public class Main {
         UserDB userDB = Databases.getUserDB();
 
 
-
-
-        List<User> testList = userDB.findAll();
-
-        User testUser = testList.get(0);
-
-        System.out.println(testUser.getUsername());
-
         //모킹으로 새로운 프로젝트 생성하고 DB에 저장 테스트.
-        /*
-        Project newProject1 = new Project();
-        newProject1.setProjectTitle("Test_project");
-        newProject1.setProjectDescription("Test_project_description");
 
-        projectDB.save(newProject1);
+        List<User> list = userDB.findAll();
 
-        User newUser1 = new User();
+        User user = list.get(0);
 
-        System.out.println("successful");*/
+        System.out.println(user.getUsername());
+
+
+
+        System.out.println("successful");
     }
 }

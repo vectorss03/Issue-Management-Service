@@ -19,13 +19,16 @@ public class UserDB implements UserRepository {
 
     @Override
     public User save(User user) {
-        // username 이미 있는지 확인
-        User existingUser_ = findByUsername(user.getUsername());
-        if (existingUser_ != null) {
-            //username이 이미 있으면 exception.
-            throw new IllegalArgumentException("Username already exists");
-        }
-        if (user.getUserId() == 0) {
+
+        //막 생성된 유저, 저장이 안된 유저.
+
+        if (user.getUserId() <= -1) {
+            // username 이미 있는지 확인
+            User existingUser = findByUsername(user.getUsername());
+            if (existingUser != null) {
+                //username이 이미 있으면 exception.
+                throw new IllegalArgumentException("Username already exists");
+            }
             user.setUserId(generateUniqueUserId());
         }
 
@@ -51,12 +54,14 @@ public class UserDB implements UserRepository {
     }
 
 
+    //유저 정보를 query를 user_id로 변경.
     private User update(User user) {
-        String sql = "UPDATE users SET password = ?, email = ? WHERE username = ?";
+        String sql = "UPDATE users SET password = ?, email = ?, username = ? WHERE user_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, user.getPassword());
             statement.setString(2, user.getEmail());
             statement.setString(3, user.getUsername());
+            statement.setInt(4, user.getUserId());
             statement.executeUpdate();
             return user;
         } catch (SQLException ex) {
@@ -64,6 +69,7 @@ public class UserDB implements UserRepository {
         }
         return null;
     }
+
 
     @Override
     public Optional<User> findById(long id) {
