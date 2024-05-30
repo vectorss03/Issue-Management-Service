@@ -223,7 +223,7 @@ public class ProjectDB implements ProjectRepository {
 
 
     private List<Issue> getProjectIssues(Integer projectId) throws SQLException {
-        String sql = "SELECT * FROM projects WHERE project_id = ?";
+        String sql = "SELECT * FROM issues WHERE project_id = ?";
         List<Issue> issues = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, projectId);
