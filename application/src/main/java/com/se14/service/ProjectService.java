@@ -10,7 +10,7 @@ import java.util.Objects;
 public interface ProjectService {
     List<Project> listProject();
     Project createProject(User creator,String name, String description);
-    void addMemberToProject(Project project,User user, UserRole role);
+    void addMemberToProject(Project project,User user, List<UserRole> roles);
     Map<String, Object> getStatistic(Project project);
     List<User> listUser(Project project, UserRole role);
     boolean hasUser(Project project,User user);
