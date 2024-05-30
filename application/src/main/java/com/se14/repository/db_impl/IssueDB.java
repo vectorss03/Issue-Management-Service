@@ -1,5 +1,6 @@
 package com.se14.repository.db_impl;
 
+import com.mysql.cj.protocol.Resultset;
 import com.se14.domain.Comment;
 import com.se14.domain.Issue;
 import com.se14.domain.Project;
@@ -8,6 +9,7 @@ import com.se14.repository.IssueRepository;
 import com.se14.repository.CommentRepository;
 import com.se14.domain.IssueStatus;
 import com.se14.domain.IssuePriority;
+import com.se14.repository.UserRepository;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -16,12 +18,14 @@ import java.util.Optional;
 
 public class IssueDB implements IssueRepository {
     private Connection connection;
+    private UserRepository userRepository;
     private CommentRepository commentRepository;
 
     // Constructor to initialize the database connection
-    public IssueDB(Connection connection, CommentRepository commentRepository) {
+    public IssueDB(Connection connection, CommentRepository commentRepository, UserRepository userRepository) {
         this.connection = connection;
         this.commentRepository = commentRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -51,7 +55,7 @@ public class IssueDB implements IssueRepository {
                 statement.setInt(9, issue.getAssignee().getUserId());
                 statement.setString(10, String.valueOf(project.getProjectId()));
                 statement.executeUpdate();
-                //NULL 체크 확인.
+
                 // 이슈에 달려있는 코멘트 가져와서 코멘트 리포에 저장.
                 for (Comment comment : issue.getComments()) {
                     commentRepository.save(comment, issue);
@@ -92,7 +96,6 @@ public class IssueDB implements IssueRepository {
             statement.setInt(8, issue.getAssignee().getUserId());
             statement.setInt(9, issue.getIssueId());
             statement.executeUpdate();
-            //NULL  체크 필요 확인.
 
             for (Comment comment : issue.getComments()) {
                 commentRepository.save(comment, issue);
@@ -146,16 +149,15 @@ public class IssueDB implements IssueRepository {
         return issues;
     }
 
+
+
     // DB에서 불러온 정보 issue 객체에 mapping 하는 helper 메소드
     private Issue mapResultSetToIssue(ResultSet resultSet) throws SQLException {
-        User reporter = new User();
-        reporter.setUserId(resultSet.getInt("reporter_id"));
-        //User의 다른 field 채우기 필요? 현욱 확인.
-        User fixer = new User();
-        fixer.setUserId(resultSet.getInt("fixer_id"));
-        User assignee = new User();
-        assignee.setUserId(resultSet.getInt("assignee_id"));
-        //NULL 체크 필요없나요? 현욱 확인. assignee 없을 경우 동작. 어떻게 되나요?
+
+        User reporter = userRepository.findById(resultSet.getInt("reporter_id")).orElse(null);
+        User fixer = userRepository.findById(resultSet.getInt("fixer_id")).orElse(null);
+        User assignee = userRepository.findById(resultSet.getInt("assignee_id")).orElse(null);
+
         return new Issue(
                 resultSet.getString("title"),
                 resultSet.getString("description"),
