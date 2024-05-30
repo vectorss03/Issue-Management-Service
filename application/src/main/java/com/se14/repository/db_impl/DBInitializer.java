@@ -20,7 +20,7 @@ public class DBInitializer {
 
             CommentDB commentDB = new CommentDB(connection);
             UserDB userDB = new UserDB(connection);
-            IssueDB issueDB = new IssueDB(connection,commentDB);
+            IssueDB issueDB = new IssueDB(connection,commentDB,userDB);
             ProjectDB projectDB = new ProjectDB(connection,userDB,commentDB);
 
 

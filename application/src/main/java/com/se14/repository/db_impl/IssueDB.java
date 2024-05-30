@@ -1,5 +1,6 @@
 package com.se14.repository.db_impl;
 
+import com.mysql.cj.protocol.Resultset;
 import com.se14.domain.Comment;
 import com.se14.domain.Issue;
 import com.se14.domain.Project;
@@ -8,6 +9,7 @@ import com.se14.repository.IssueRepository;
 import com.se14.repository.CommentRepository;
 import com.se14.domain.IssueStatus;
 import com.se14.domain.IssuePriority;
+import com.se14.repository.UserRepository;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -16,12 +18,14 @@ import java.util.Optional;
 
 public class IssueDB implements IssueRepository {
     private Connection connection;
+    private UserRepository userRepository;
     private CommentRepository commentRepository;
 
     // Constructor to initialize the database connection
-    public IssueDB(Connection connection, CommentRepository commentRepository) {
+    public IssueDB(Connection connection, CommentRepository commentRepository, UserRepository userRepository) {
         this.connection = connection;
         this.commentRepository = commentRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -38,7 +42,7 @@ public class IssueDB implements IssueRepository {
             if (issue.getIssueId() <= 0 || existingIssue.isPresent()) {
                 issue.setIssueId(generateUniqueIssueId());
             }
-            String sql = "INSERT INTO issues (issue_id, title, description, status, priority, reported_date, reporter_id, fixer_id, assignee_id, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO issues (issue_id, title, description, status, priority, date, reporter_id, fixer_id, assignee_id, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 statement.setInt(1, issue.getIssueId());
                 statement.setString(2, issue.getTitle());
@@ -80,7 +84,7 @@ public class IssueDB implements IssueRepository {
     }
 
     private Issue update(Issue issue, Project project) {
-        String sql = "UPDATE issues SET title = ?, description = ?, status = ?, priority = ?, reported_date = ?, reporter_id = ?, fixer_id = ?, assignee_id = ? WHERE issue_id = ?";
+        String sql = "UPDATE issues SET title = ?, description = ?, status = ?, priority = ?, date = ?, reporter_id = ?, fixer_id = ?, assignee_id = ? WHERE issue_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, issue.getTitle());
             statement.setString(2, issue.getDescription());
@@ -145,21 +149,21 @@ public class IssueDB implements IssueRepository {
         return issues;
     }
 
+
+
     // DB에서 불러온 정보 issue 객체에 mapping 하는 helper 메소드
     private Issue mapResultSetToIssue(ResultSet resultSet) throws SQLException {
-        User reporter = new User();
-        reporter.setUserId(resultSet.getInt("reporter_id"));
-        User fixer = new User();
-        fixer.setUserId(resultSet.getInt("fixer_id"));
-        User assignee = new User();
-        assignee.setUserId(resultSet.getInt("assignee_id"));
+
+        User reporter = userRepository.findById(resultSet.getInt("reporter_id")).orElse(null);
+        User fixer = userRepository.findById(resultSet.getInt("fixer_id")).orElse(null);
+        User assignee = userRepository.findById(resultSet.getInt("assignee_id")).orElse(null);
 
         return new Issue(
                 resultSet.getString("title"),
                 resultSet.getString("description"),
                 IssueStatus.valueOf(resultSet.getString("status")),
                 IssuePriority.valueOf(resultSet.getString("priority")),
-                resultSet.getDate("reported_date"),
+                resultSet.getDate("date"),
                 reporter,
                 fixer,
                 assignee,
