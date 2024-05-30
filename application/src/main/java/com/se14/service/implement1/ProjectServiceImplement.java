@@ -160,4 +160,14 @@ public class ProjectServiceImplement implements ProjectService {
         }
         return userProjects;
     }
+    @Override
+    public List<User> findUserByProject(Project project) {
+        Project foundProject = projectRepository.findById(project.getProjectId()).orElse(null);
+        if (foundProject == null) {
+            throw new IllegalArgumentException("Project not found");
+        }
+        return new ArrayList<>(foundProject.getMembers().keySet());
+    }
+
+
 }

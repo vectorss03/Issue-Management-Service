@@ -272,6 +272,21 @@ public class ProjectServiceImplementTest {
         // Assert
         assertThat(result).isFalse();
     }
+    @Test
+    @DisplayName("Find Users by Project")
+    void testFindUserByProject() {
+        Project project = projects.get(0);
+        when(projectRepository.findById(project.getProjectId())).thenReturn(Optional.of(project));
+
+        List<User> users = projectService.findUserByProject(project);
+
+        assertThat(users).isNotEmpty();
+        assertThat(users.size()).isEqualTo(5);  // Assuming 5 users were added to each project in the setup
+        assertThat(users).containsAll(project.getMembers().keySet());
+
+        verify(projectRepository).findById(project.getProjectId());
+    }
+
 
 
 
