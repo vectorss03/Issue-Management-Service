@@ -11,8 +11,10 @@ public class User {
 
     // Default constructor
     public User() {
+        this.userId =0;
     }
     public User(String password) {
+        this.userId = 0;
         this.password = password;
     }
     @Override

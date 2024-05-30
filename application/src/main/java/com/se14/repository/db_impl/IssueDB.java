@@ -38,7 +38,7 @@ public class IssueDB implements IssueRepository {
             if (issue.getIssueId() <= 0 || existingIssue.isPresent()) {
                 issue.setIssueId(generateUniqueIssueId());
             }
-            String sql = "INSERT INTO issues (issue_id, title, description, status, priority, reported_date, reporter_id, fixer_id, assignee_id, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO issues (issue_id, title, description, status, priority, date, reporter_id, fixer_id, assignee_id, project_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 statement.setInt(1, issue.getIssueId());
                 statement.setString(2, issue.getTitle());
@@ -51,7 +51,7 @@ public class IssueDB implements IssueRepository {
                 statement.setInt(9, issue.getAssignee().getUserId());
                 statement.setString(10, String.valueOf(project.getProjectId()));
                 statement.executeUpdate();
-
+                //NULL 체크 확인.
                 // 이슈에 달려있는 코멘트 가져와서 코멘트 리포에 저장.
                 for (Comment comment : issue.getComments()) {
                     commentRepository.save(comment, issue);
@@ -80,7 +80,7 @@ public class IssueDB implements IssueRepository {
     }
 
     private Issue update(Issue issue, Project project) {
-        String sql = "UPDATE issues SET title = ?, description = ?, status = ?, priority = ?, reported_date = ?, reporter_id = ?, fixer_id = ?, assignee_id = ? WHERE issue_id = ?";
+        String sql = "UPDATE issues SET title = ?, description = ?, status = ?, priority = ?, date = ?, reporter_id = ?, fixer_id = ?, assignee_id = ? WHERE issue_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, issue.getTitle());
             statement.setString(2, issue.getDescription());
@@ -92,6 +92,7 @@ public class IssueDB implements IssueRepository {
             statement.setInt(8, issue.getAssignee().getUserId());
             statement.setInt(9, issue.getIssueId());
             statement.executeUpdate();
+            //NULL  체크 필요 확인.
 
             for (Comment comment : issue.getComments()) {
                 commentRepository.save(comment, issue);
@@ -149,17 +150,18 @@ public class IssueDB implements IssueRepository {
     private Issue mapResultSetToIssue(ResultSet resultSet) throws SQLException {
         User reporter = new User();
         reporter.setUserId(resultSet.getInt("reporter_id"));
+        //User의 다른 field 채우기 필요? 현욱 확인.
         User fixer = new User();
         fixer.setUserId(resultSet.getInt("fixer_id"));
         User assignee = new User();
         assignee.setUserId(resultSet.getInt("assignee_id"));
-
+        //NULL 체크 필요없나요? 현욱 확인. assignee 없을 경우 동작. 어떻게 되나요?
         return new Issue(
                 resultSet.getString("title"),
                 resultSet.getString("description"),
                 IssueStatus.valueOf(resultSet.getString("status")),
                 IssuePriority.valueOf(resultSet.getString("priority")),
-                resultSet.getDate("reported_date"),
+                resultSet.getDate("date"),
                 reporter,
                 fixer,
                 assignee,
