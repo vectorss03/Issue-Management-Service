@@ -115,10 +115,8 @@
 import {computed, inject, onMounted, ref} from "vue";
 import {initFlowbite} from 'flowbite'
 import store from "@/vuex/store";
-import {useRouter} from "vue-router";
 
 const axios = inject('axios')
-const router = useRouter()
 
 let projectList = []
 const searchedProjectList = ref(projectList)
