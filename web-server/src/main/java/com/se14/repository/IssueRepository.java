@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface IssueRepository {
     Issue save(Issue issue,Project project);
-    Optional<Issue> findById(long id);
+    Optional<Issue> findById(Integer id);
+
     List<Issue> findByProject(Project project);
 }

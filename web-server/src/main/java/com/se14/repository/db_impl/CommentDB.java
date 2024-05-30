@@ -55,11 +55,11 @@ public class CommentDB implements CommentRepository {
 
 
     @Override
-    public Optional<Comment> findById(long id) {
+    public Optional<Comment> findById(Integer id) {
 
         String sql = "SELECT * FROM comments WHERE comment_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, id);
+            statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 return Optional.of(mapResultSetToComment(resultSet));
@@ -75,7 +75,7 @@ public class CommentDB implements CommentRepository {
         List<Comment> comments = new ArrayList<>();
         String sql = "SELECT * FROM comments WHERE issue_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, issue.getIssueId());
+            statement.setInt(1, issue.getIssueId());
             ResultSet resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 comments.add(mapResultSetToComment(resultSet));
@@ -110,7 +110,7 @@ public class CommentDB implements CommentRepository {
             statement.setString(1, comment.getCommentTitle());
             statement.setString(2, comment.getText());
             statement.setTimestamp(3, new Timestamp(comment.getTimestamp().getTime()));
-            statement.setLong(4, comment.getID());
+            statement.setInt(4, comment.getID());
             statement.executeUpdate();
             return comment;
         } catch (SQLException ex) {

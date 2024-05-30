@@ -134,10 +134,10 @@ public class IssueDB implements IssueRepository {
     }
 
     @Override
-    public Optional<Issue> findById(long id) {
+    public Optional<Issue> findById(Integer id) {
         String sql = "SELECT * FROM issues WHERE issue_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, id);
+            statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 Issue issue = mapResultSetToIssue(resultSet);

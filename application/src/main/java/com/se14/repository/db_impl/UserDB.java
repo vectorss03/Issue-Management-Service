@@ -25,7 +25,7 @@ public class UserDB implements UserRepository {
             //username이 이미 있으면 exception.
             throw new IllegalArgumentException("Username already exists");
         }
-        if (user.getUserId() == 0) {
+        if (user.getUserId() == 0) {  //User의 default id 0으로 설정할까요? 현욱 확인. -> -1로 설정하는게 나을 것 같습니다. 밑에 uniqID에서 0설정 될 수도 있을 것 같습니다.
             user.setUserId(generateUniqueUserId());
         }
 
