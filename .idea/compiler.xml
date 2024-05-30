@@ -11,10 +11,5 @@
         <module name="Web_Server.main" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="application" target="17" />
-      <module name="application.main" target="17" />
-      <module name="application.test" target="17" />
-    </bytecodeTargetLevel>
   </component>
 </project>
