@@ -85,10 +85,10 @@
       <tr>
         <th scope="col" class="px-4 py-3 w-1/4">Title</th>
         <th scope="col" class="px-4 py-3 w-2/4">Description</th>
-        <th scope="col" class="px-4 py-3 w-1/8">Current Issues</th>
-        <th scope="col" class="px-4 py-3 w-1/8">
-          <span class="sr-only">Actions</span>
-        </th>
+<!--        <th scope="col" class="px-4 py-3 w-1/8">Current Issues</th>-->
+<!--        <th scope="col" class="px-4 py-3 w-1/8">-->
+<!--          <span class="sr-only">Actions</span>-->
+<!--        </th>-->
       </tr>
       </thead>
 
@@ -98,10 +98,10 @@
           <router-link :to="{ name: 'project', params: { project_id: project.project_id } }">{{ project.title }}</router-link>
         </th>
         <td class="px-4 py-3 w-2/4">{{ project.description }}</td>
-        <td class="px-4 py-3 w-1/8">0</td>
-        <td class="px-4 py-3 w-1/8">
-          <span class="sr-only">Actions</span>
-        </td>
+<!--        <td class="px-4 py-3 w-1/8">0</td>-->
+<!--        <td class="px-4 py-3 w-1/8">-->
+<!--          <span class="sr-only">Actions</span>-->
+<!--        </td>-->
       </tr>
       </tbody>
 
@@ -115,8 +115,10 @@
 import {computed, inject, onMounted, ref} from "vue";
 import {initFlowbite} from 'flowbite'
 import store from "@/vuex/store";
+import {useRouter} from "vue-router";
 
 const axios = inject('axios')
+const router = useRouter()
 
 let projectList = []
 const searchedProjectList = ref(projectList)

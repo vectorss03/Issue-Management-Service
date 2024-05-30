@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import jakarta.servlet.http.HttpSession;
@@ -155,4 +156,9 @@ public class ProjectController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    @GetMapping("{projectId}/statistics")
+    public HashMap<String, Object> getStatistics(@PathVariable("projectId") int projectId) {
+        Project project = projectService.findProjectById(projectId);
+        return projectService.getStatistic(project);
+    }
 }
