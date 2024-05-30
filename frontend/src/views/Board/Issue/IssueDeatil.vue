@@ -227,13 +227,15 @@
 
 <script setup>
 import {inject, onMounted, ref} from "vue";
-import {useRoute} from "vue-router";
+import {useRoute, useRouter} from "vue-router";
 import StatusBadge from "@/components/StatusBadge.vue";
 import PriorityBadge from "@/components/PriorityBadge.vue";
 import {initFlowbite} from "flowbite";
+import {HttpStatusCode} from "axios";
 
 const axios = inject('axios')
 const route = useRoute()
+const router = useRouter()
 
 const issue = ref({
   "title": "",
@@ -300,6 +302,9 @@ function getIssue() {
     console.log(error)
     if (error.message.indexOf('Network Error') > -1) {
       alert('Network Error\nPlease Try again later')
+    } else if (error.response.status === HttpStatusCode.Forbidden) {
+      alert('You do not have access to this project')
+      router.back()
     }
   })
 }

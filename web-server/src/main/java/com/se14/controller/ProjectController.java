@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import jakarta.servlet.http.HttpSession;
@@ -61,26 +62,17 @@ public class ProjectController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-//    @GetMapping("/{projectId}/issues")
-//    public List<IssueDTO> issueList(@PathVariable("projectId") int projectId) {
-//        Project project = projectService.findProjectById(projectId);
-//        List<Issue> issues = issueService.searchIssues(project,null);
-//
-//        return issues.stream().map(IssueDTO::new).toList();
-//    }
-
-//    @GetMapping("/{projectId}/issues")
-//    public List<IssueDTO> issueQueriedList(@PathVariable("projectId") int projectId,
-//                                           @RequestParam(value = "keyword", required = false) String keyword,
-//                                           @RequestParam(value = "status", required = false) String status,
-//                                           @RequestParam(value = "priority", required = false) String priority,
-//                                           @RequestParam(value = "assignee", required = false) String assignee,
-//                                           @RequestParam(value = "fixer", required = false) String fixer,
-//                                           @RequestParam(value = "reporter", required = false) String reporter) {
     @GetMapping("/{projectId}/issues")
-    public List<IssueDTO> issueQueriedList(@PathVariable("projectId") int projectId, @ModelAttribute FilterDTO filter) {
+    public ResponseEntity<List<IssueDTO>> issueList(@PathVariable("projectId") int projectId, @ModelAttribute FilterDTO filter, HttpSession session) {
 
         Project project = projectService.findProjectById(projectId);
+        User user = (User) session.getAttribute("USER");
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        if (!projectService.hasUser(project, user)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         SearchCriteria searchCriteria = new SearchCriteria();
         searchCriteria.setTitle(filter.getKeyword());
@@ -90,7 +82,7 @@ public class ProjectController {
         searchCriteria.setFixer(userService.findByUsername(filter.getFixer()));
         searchCriteria.setReporter(userService.findByUsername(filter.getReporter()));
 
-        return issueService.searchIssues(project, searchCriteria).stream().map(IssueDTO::new).toList();
+        return new ResponseEntity<>(issueService.searchIssues(project, searchCriteria).stream().map(IssueDTO::new).toList(), HttpStatus.OK);
     }
 
     @PostMapping("/{projectId}/issues")
@@ -116,55 +108,51 @@ public class ProjectController {
         return project.getMembers().get(user);
     }
 
-//
-//    @GetMapping("/{projectId}/users")
-//    public List<User> userList(@PathVariable("projectId") int projectId, @RequestBody Map<String, String> params) {
-//        Project currentProject = projectService.findProjectById(projectId);
+
+    @GetMapping("/{projectId}/users")
+    public List<User> userList(@PathVariable("projectId") int projectId) {
+        Project currentProject = projectService.findProjectById(projectId);
 //        UserRole role = (UserRole)params.get("userRole");
+
+        List<User> usersInProject = currentProject.getMembers().keySet().stream().toList();
+        //프론트 엔드 쪽 수정 필요함
+
+        return usersInProject;
+        //프로젝트에 참가한 유저들 반환
+    }
+
+    @GetMapping("/{projectId}/users/join")
+    public List<User> userJoinList(@PathVariable("projectId") int projectId) {
+        Project currentProject = projectService.findProjectById(projectId);
+
+        List<User> allUsers = userService.listAllUser();
+        List<User> notJoinedUsers = new ArrayList<>();
+
+        for(User user : allUsers){
+            if(!projectService.hasUser(currentProject, user))
+                notJoinedUsers.add(user);
+        }
+
+        return notJoinedUsers;
+        //프로젝트에 참가해 있지 않은 유저들 반환
+    }
 //
-//        List<User> usersInProject = projectService.listUser(currentProject, role);
-//        //프론트 엔드 쪽 수정 필요함
-//
-//        return usersInProject;
-//        //프로젝트에 참가한 유저들 반환
-//    }
-//
-//    @GetMapping("/{projectId}/users/join")
-//    public List<User> userJoinList(@PathVariable("projectId") int projectId) {
-//        Project currentProject = projectService.findProjectById(projectId);
-//
-//        List<User> allUsers = userService.listAllUser();
-//        List<User> notJoinedUsers = new ArrayList<>();
-//
-//        for(User user : allUsers){
-//            if(!projectService.hasUser(currentProject, user))
-//                notJoinedUsers.add(user);
-//        }
-//
-//        return notJoinedUsers;
-//        //프로젝트에 참가해 있지 않은 유저들 반환
-//    }
-//
-//    @PostMapping("/{projectId}/users")
-//    public ResponseEntity<Void> addUser(@PathVariable("projectId") int projectId, @RequestBody Map<String, String> params) {
-//
-//        Project currentProject = projectService.findProjectById(projectId);
-//        List<Issue> issues = issueService.searchIssues(currentProject, null);
-//        Issue detailedIssue;
-//        for (Issue issue : issues) {
-//            if (issue.getTitle().equals(issueTitle)) {
-//                detailedIssue = issue;
-//                break;
-//            }
-//        }
-//        User user = userService.findByUsername(params.get("username"));
-//        UserRole role = UserRole.valueOf(params.get("role"));
-//
-//        //void addMemberToProject(Project project,User user, UserRole role);
+    @PostMapping("/{projectId}/users")
+    public ResponseEntity<Void> addUser(@PathVariable("projectId") int projectId, @RequestBody Map<String, Object> params) {
+        Project currentProject = projectService.findProjectById(projectId);
+
+        User newUser = userService.findByUsername(params.get("username").toString());
+        List<String> userRoles = (List<String>) params.get("userRoles");
+        for (String userRole : userRoles) {
+            UserRole role = UserRole.valueOf(userRole.toUpperCase());
+            projectService.addMemberToProject(currentProject, newUser, role);
+        }
+
+        //void addMemberToProject(Project project,User user, UserRole role);
 //        projectService.addMemberToProject(currentProject, user, role);
-//        //Vue쪽에서 role 처리 해야 함
-//
-//        return new ResponseEntity<>(HttpStatus.OK);
-//    }
+        //Vue쪽에서 role 처리 해야 함
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 
 }

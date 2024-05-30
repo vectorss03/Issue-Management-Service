@@ -57,16 +57,16 @@
                   <label class="block mb-2 text-sm font-medium text-gray-900">Title</label>
                   <input v-model="projectForm.title" type="text"
                          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:border-blue-600 block w-full p-2.5"
-                         placeholder="Type project name" required="">
+                         placeholder="Type project name" required>
                 </div>
                 <div class="col-span-2">
                   <label class="block mb-2 text-sm font-medium text-gray-900">Description</label>
                   <textarea v-model="projectForm.description" rows="4"
                             class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:border-blue-500 resize-none"
-                            placeholder="Write project description here"></textarea>
+                            placeholder="Write project description here" required></textarea>
                 </div>
               </div>
-              <button type="submit" data-modal-hide="create-project-modal"
+              <button type="submit"
                       class="text-white inline-flex items-center bg-blue-600 hover:bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center">
                 Save
               </button>
@@ -169,7 +169,7 @@ function createProject() {
     console.log(response)
     projectForm.title = ""
     projectForm.description = ""
-    getProjects()
+    location.reload()
   })
   .catch(error => {
     console.log(error)
