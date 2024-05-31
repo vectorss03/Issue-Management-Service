@@ -143,7 +143,7 @@ public class ProjectServiceImplement implements ProjectService {
         return members.containsKey(user);
     }
     @Override
-    public Project findProjectById(long id) {
+    public Project findProjectById(Integer id) {
         return projectRepository.findById(id).orElse(null);
     }
 

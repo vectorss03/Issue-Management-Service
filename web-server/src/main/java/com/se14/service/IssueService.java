@@ -12,5 +12,5 @@ public interface IssueService {
     void updateIssueStatus(Project project, User updater, Issue issue, IssueStatus status);
     void addComment(Project project, User commenter, Issue issue, String commentTitle, String commentText);
 
-    Issue findIssueById(Long id);
+    Issue findIssueById(Integer id);
 }
