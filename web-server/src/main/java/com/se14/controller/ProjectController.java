@@ -4,6 +4,7 @@ import com.se14.domain.*;
 import com.se14.dto.FilterDTO;
 import com.se14.dto.IssueDTO;
 import com.se14.dto.ProjectDTO;
+import com.se14.dto.UserDTO;
 import com.se14.service.SearchCriteria;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -102,28 +103,27 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}/roles")
-    public List<UserRole> roleList(@PathVariable("projectId") int projectId, HttpSession session) {
+    public List<UserRole> roleList(@PathVariable("projectId") int projectId, HttpSession session) throws Exception {
         Project project = projectService.findProjectById(projectId);
         User user = (User) session.getAttribute("USER");
 
-        return project.getMembers().get(user);
+        return projectService.getUserRoles(project, user);
+        // return project.getMembers().get(user);
     }
 
 
     @GetMapping("/{projectId}/users")
-    public List<User> userList(@PathVariable("projectId") int projectId) {
+    public List<UserDTO> userList(@PathVariable("projectId") int projectId) {
         Project currentProject = projectService.findProjectById(projectId);
 //        UserRole role = (UserRole)params.get("userRole");
 
-        List<User> usersInProject = currentProject.getMembers().keySet().stream().toList();
+        return projectService.findUserByProject(currentProject).stream().map(UserDTO::new).toList();
         //프론트 엔드 쪽 수정 필요함
-
-        return usersInProject;
         //프로젝트에 참가한 유저들 반환
     }
 
     @GetMapping("/{projectId}/users/join")
-    public List<User> userJoinList(@PathVariable("projectId") int projectId) {
+    public List<UserDTO> userJoinList(@PathVariable("projectId") int projectId) {
         Project currentProject = projectService.findProjectById(projectId);
 
         List<User> allUsers = userService.listAllUser();
@@ -134,7 +134,7 @@ public class ProjectController {
                 notJoinedUsers.add(user);
         }
 
-        return notJoinedUsers;
+        return notJoinedUsers.stream().map(UserDTO::new).toList();
         //프로젝트에 참가해 있지 않은 유저들 반환
     }
 //
@@ -143,11 +143,8 @@ public class ProjectController {
         Project currentProject = projectService.findProjectById(projectId);
 
         User newUser = userService.findByUsername(params.get("username").toString());
-        List<String> userRoles = (List<String>) params.get("userRoles");
-        for (String userRole : userRoles) {
-            UserRole role = UserRole.valueOf(userRole.toUpperCase());
-            projectService.addMemberToProject(currentProject, newUser, role);
-        }
+        List<UserRole> userRoles = ((List<String>) params.get("userRoles")).stream().map(UserRole::valueOf).toList();
+        projectService.addMemberToProject(currentProject, newUser, userRoles);
 
         //void addMemberToProject(Project project,User user, UserRole role);
 //        projectService.addMemberToProject(currentProject, user, role);

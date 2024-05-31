@@ -1,6 +1,7 @@
 package com.se14.service.implement1;
 
 import com.se14.domain.*;
+import com.se14.repository.db_impl.DBInitializer;
 import com.se14.service.*;
 import com.se14.repository.IssueRepository;
 import com.se14.repository.ProjectRepository;
@@ -19,9 +20,9 @@ public class IssueServiceImplement implements IssueService{
     private final CommentRepository commentRepository;
 
     public IssueServiceImplement(IssueRepository issueRepository, ProjectRepository projectRepository, CommentRepository commentRepository) {
-        this.issueRepository = issueRepository;
-        this.projectRepository = projectRepository;
-        this.commentRepository = commentRepository;
+        this.issueRepository = DBInitializer.DatabaseObjects.getInstance().getIssueDB();
+        this.projectRepository = DBInitializer.DatabaseObjects.getInstance().getProjectDB();
+        this.commentRepository = DBInitializer.DatabaseObjects.getInstance().getCommentDB();
     }
     @Override
     public void reportIssue(Project project, User reporter, String title, String description, IssuePriority priority) {
@@ -46,15 +47,15 @@ public class IssueServiceImplement implements IssueService{
         }
 
         return issues.stream()
-                .filter(issue -> criteria.getTitle() == null || issue.getTitle().contains(criteria.getTitle()))
-                .filter(issue -> criteria.getDescription() == null || issue.getDescription().contains(criteria.getDescription()))
+                .filter(issue -> criteria.getTitle() == null || issue.getTitle().toLowerCase().contains(criteria.getTitle().toLowerCase()))
+                .filter(issue -> criteria.getDescription() == null || issue.getDescription().toLowerCase().contains(criteria.getDescription().toLowerCase()))
                 .filter(issue -> criteria.getStatus() == null || issue.getStatus().equals(criteria.getStatus()))
                 .filter(issue -> criteria.getPriority() == null || issue.getPriority().equals(criteria.getPriority()))
                 .filter(issue -> (criteria.getStartDate() == null || !issue.getReportedDate().before(criteria.getStartDate()))
                         && (criteria.getEndDate() == null || !issue.getReportedDate().after(criteria.getEndDate())))
-                .filter(issue -> criteria.getReporter() == null || issue.getReporter().equals(criteria.getReporter()))
-                .filter(issue -> criteria.getFixer() == null || (issue.getFixer() != null && issue.getFixer().equals(criteria.getFixer())))
-                .filter(issue -> criteria.getAssignee() == null || (issue.getAssignee() != null && issue.getAssignee().equals(criteria.getAssignee())))
+                .filter(issue -> criteria.getReporter() == null || issue.getReporter().getUserId().equals(criteria.getReporter().getUserId()))
+                .filter(issue -> criteria.getFixer() == null || (issue.getFixer() != null && issue.getFixer().getUserId().equals(criteria.getFixer().getUserId())))
+                .filter(issue -> criteria.getAssignee() == null || (issue.getAssignee() != null && issue.getAssignee().getUserId().equals(criteria.getAssignee().getUserId())))
                 .collect(Collectors.toList());
     }
 

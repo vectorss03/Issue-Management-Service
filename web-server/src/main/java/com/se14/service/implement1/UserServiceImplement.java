@@ -2,6 +2,7 @@ package com.se14.service.implement1;
 
 import com.se14.domain.User;
 import com.se14.repository.UserRepository;
+import com.se14.repository.db_impl.DBInitializer;
 import com.se14.service.UserService;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,7 @@ public class UserServiceImplement implements UserService {
     private final UserRepository userRepository;
 
     public UserServiceImplement(UserRepository userRepository) {
-        this.userRepository = userRepository;
+        this.userRepository = DBInitializer.DatabaseObjects.getInstance().getUserDB();
     }
 
     @Override

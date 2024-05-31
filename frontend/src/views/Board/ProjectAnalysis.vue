@@ -77,7 +77,7 @@ const statistics = computed(() => {
         plugins: {
           title: {
             display: true,
-            text: 'Daily Issue Reported'
+            text: 'Monthly Issue Reported'
           }
         }
       }
