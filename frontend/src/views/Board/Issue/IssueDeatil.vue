@@ -59,16 +59,16 @@
             <li class="text-sm mb-3">
               <StatusBadge :status="issue.status.toUpperCase()"/>
               <button data-modal-target="change-state-modal" data-modal-toggle="change-state-modal"
-                  class="mx-2.5 text-blue-700 text-xs px-4 hover:underline">Change State</button>
+                  class="mx-2.5 text-blue-700 text-xs px-4 hover:underline" :class="canChangeState ? '' : 'hidden'">Change State</button>
             </li>
             <li class="text-sm mb-5">
               <PriorityBadge :priority="issue.priority.toUpperCase()"/>
             </li>
             <li class="text-sm mb-3">
               <span class="px-1.5 text-xs font-medium">{{ issue.assignee ? issue.assignee : "Unassigned" }}</span>
-              <span v-if="!issue.assignee" class="mx-2.5 px-4">
+              <span class="mx-2.5 px-4">
                 <button data-modal-target="assign-developer-modal" data-modal-toggle="assign-developer-modal"
-                        class="text-blue-700 text-xs hover:underline">
+                        class="text-blue-700 text-xs hover:underline" v-if="isProjectLead" :class="issue.status === `NEW` || issue.status === 'REOPENED' ? '' : 'hidden'">
                   Assign Developer
                 </button>
               </span>
@@ -193,22 +193,26 @@
                 <select id="status"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:border-blue-500 block p-2.5 w-2/5"
                         disabled>
-                  <option selected>{{changeStateForm.newState}}</option>
+                  <option selected>{{ issue.status }}</option>
                 </select>
 
                 <svg class="w-1/5 h-6 text-gray-800 my-2.5 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 12H5m14 0-4 4m4-4-4-4"/>
                 </svg>
 
-                <select id="priority" v-model="changeStateForm.newState"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:border-blue-500 block p-2.5 w-2/5">
-                  <option value="NEW">New</option>
-                  <option value="ASSIGNED">Assigned</option>
-                  <option value="FIXED">Fixed</option>
-                  <option value="RESOLVED">Resolved</option>
-                  <option value="CLOSED">Closed</option>
-                  <option value="REOPENED">Reopened</option>
-                </select>
+<!--                <select id="priority" v-model="changeStateForm.nextState.value" @click="console.log(changeStateForm.nextState.value)"-->
+<!--                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:border-blue-500 block p-2.5 w-2/5" disabled>-->
+<!--                  <option value="NEW">New</option>-->
+<!--                  <option value="ASSIGNED">Assigned</option>-->
+<!--                  <option value="FIXED">Fixed</option>-->
+<!--                  <option value="RESOLVED">Resolved</option>-->
+<!--                  <option value="CLOSED">Closed</option>-->
+<!--                  <option value="REOPENED">Reopened</option>-->
+<!--                </select>-->
+
+                  <select id="status" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:border-blue-500 block p-2.5 w-2/5" disabled>
+                    <option selected>{{ changeStateForm.nextState.value }}</option>
+                  </select>
               </div>
             </div>
             <button type="submit"
@@ -226,14 +230,17 @@
 </template>
 
 <script setup>
-import {inject, onMounted, ref} from "vue";
-import {useRoute} from "vue-router";
+import {computed, inject, onMounted, ref} from "vue";
+import {useRoute, useRouter} from "vue-router";
 import StatusBadge from "@/components/StatusBadge.vue";
 import PriorityBadge from "@/components/PriorityBadge.vue";
 import {initFlowbite} from "flowbite";
+import {HttpStatusCode} from "axios";
+import store from "@/vuex/store";
 
 const axios = inject('axios')
 const route = useRoute()
+const router = useRouter()
 
 const issue = ref({
   "title": "",
@@ -257,8 +264,31 @@ const assignDeveloperForm = {
 }
 
 const changeStateForm = {
-  "newState": ""
+  "nextState": computed(() => {
+    switch (issue.value.status) {
+      case "NEW": return "ASSIGNED"
+      case "ASSIGNED": return "FIXED"
+      case "FIXED": return "RESOLVED"
+      case "RESOLVED": return "CLOSED"
+      case "CLOSED": return "REOPENED"
+      case "REOPENED": return "ASSIGNED"
+      default: return "NEW"
+    }
+  })
 }
+
+const canChangeState = computed(() => {
+  switch (issue.value.status) {
+    case "NEW": return false
+    case "ASSIGNED": return store.state.username === issue.value.assignee
+    case "FIXED": return store.getters.hasRole('TESTER') || store.getters.hasRole('ADMIN')
+    case "RESOLVED": return store.getters.hasRole('PROJECT_LEAD') || store.getters.hasRole('ADMIN')
+    case "CLOSED": return store.getters.hasRole('PROJECT_LEAD') || store.getters.hasRole('ADMIN')
+    case "REOPENED": return false
+    default: return false
+  }
+})
+
 
 const userList = ref([
   {
@@ -268,6 +298,10 @@ const userList = ref([
 
 const recommendedDeveloperList = ref([])
 const searchedUserList = ref([])
+
+// const isAdmin = computed(() => store.getters.hasRole('ADMIN'))
+const isProjectLead = computed(() => store.getters.hasRole('ADMIN') || store.getters.hasRole('PROJECT_LEAD'))
+// const isTester = computed(() => store.getters.hasRole('ADMIN') || store.getters.hasRole('TESTER'))
 
 onMounted(() => {
   initFlowbite();
@@ -295,11 +329,14 @@ function getIssue() {
       .then(response => {
         console.log(response.data)
         issue.value = response.data
-        changeStateForm.newState = issue.value.status
+        // changeStateForm.nextState = issue.value.status
       }).catch(error => {
     console.log(error)
     if (error.message.indexOf('Network Error') > -1) {
       alert('Network Error\nPlease Try again later')
+    } else if (error.response.status === HttpStatusCode.Forbidden) {
+      alert('You do not have access to this project')
+      router.back()
     }
   })
 }
@@ -375,7 +412,7 @@ function assignDeveloper() {
 
 function changeState() {
   axios.put('/api/projects/' + route.params.project_id + '/issues/' + route.params.issue_id + '/status', {
-    "status": changeStateForm.newState
+    "status": changeStateForm.nextState.value
   }).then(response => {
     console.log(response.data)
     getIssue()

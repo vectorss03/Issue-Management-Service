@@ -7,6 +7,9 @@ import com.se14.repository.UserRepository;
 import com.se14.service.ProjectService;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -81,24 +84,31 @@ public class ProjectServiceImplement implements ProjectService {
     }
 
     @Override
-    public Map<String, Object> getStatistic(Project project) {
-        Map<String, Object> statistics = new HashMap<>();
-        Map<Calendar, List<Issue>> dateIssuesMap = new HashMap<>();
+    public HashMap<String, Object> getStatistic(Project project) {
+        HashMap<String, Object> statistics = new HashMap<>();
+        Map<String, Integer> dailyIssueCountMap = new HashMap<>();
+        Map<String, Integer> monthlyIssueCountMap = new HashMap<>();
         Map<IssuePriority, Integer> priorityCountMap = new HashMap<>();
         Map<IssueStatus, Integer> statusCountMap = new HashMap<>();
 
         List<Issue> issues = project.getIssues();
 
+        for (int i = 0; i < 7; i++) {
+            dailyIssueCountMap.put(LocalDate.now().minusDays(i).format(DateTimeFormatter.ofPattern("MM/dd")), 0);
+
+        }
+
+        for (int i = 0; i < 6; i++) {
+            monthlyIssueCountMap.put(LocalDate.now().minusMonths(i).format(DateTimeFormatter.ofPattern("yyyy/MM")), 0);
+        }
+
         for (Issue issue : issues) {
             // Date-based statistics
-            Calendar issueDate = Calendar.getInstance();
-            issueDate.setTime(issue.getReportedDate());
-            issueDate.set(Calendar.HOUR_OF_DAY, 0);
-            issueDate.set(Calendar.MINUTE, 0);
-            issueDate.set(Calendar.SECOND, 0);
-            issueDate.set(Calendar.MILLISECOND, 0);
-            Calendar normalizedDate = (Calendar) issueDate.clone();
-            dateIssuesMap.computeIfAbsent(normalizedDate, k -> new ArrayList<>()).add(issue);
+            String issueDailyDate = new SimpleDateFormat("MM/dd").format(issue.getReportedDate());
+            dailyIssueCountMap.computeIfPresent(issueDailyDate, (k, v) -> v + 1);
+
+            String issueMonthlyDate = new SimpleDateFormat("yyyy/MM").format(issue.getReportedDate());
+            monthlyIssueCountMap.computeIfPresent(issueMonthlyDate, (k, v) -> v + 1);
 
             // Priority-based statistics
             priorityCountMap.put(issue.getPriority(), priorityCountMap.getOrDefault(issue.getPriority(), 0) + 1);
@@ -107,7 +117,8 @@ public class ProjectServiceImplement implements ProjectService {
             statusCountMap.put(issue.getStatus(), statusCountMap.getOrDefault(issue.getStatus(), 0) + 1);
         }
 
-        statistics.put("dateIssues", dateIssuesMap);
+        statistics.put("dailyIssueCount", dailyIssueCountMap);
+        statistics.put("monthlyIssueCount", monthlyIssueCountMap);
         statistics.put("priorityCount", priorityCountMap);
         statistics.put("statusCount", statusCountMap);
 

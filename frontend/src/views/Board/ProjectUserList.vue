@@ -27,6 +27,18 @@
           <form class="p-4 md:p-5" v-on:submit.prevent="addUser">
             <div class="grid gap-4 mb-4 grid-cols-2">
               <div class="col-span-2">
+                <ul>
+                  <li v-for="(userRole, index) in ['Admin', 'Project_Lead', 'Developer', 'Tester']" :key="index">
+                    <div class="flex items-center p-2 rounded hover:bg-gray-100">
+                      <input :id="`userRole-` + userRole" type="checkbox" :value="userRole.toUpperCase()"
+                             class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-0" v-model="addUserForm.userRoles">
+                      <label :for="`userRole-` + userRole"
+                             class="w-full ms-2 text-sm font-medium text-gray-900 rounded">{{ userRole }}</label>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <div class="col-span-2">
                 <div class="relative">
                   <div class="absolute inset-y-0 rtl:inset-r-0 start-0 flex items-center ps-3 pointer-events-none">
                     <svg class="w-4 h-4 text-gray-500" aria-hidden="true"
@@ -43,7 +55,7 @@
                   <li v-for="(user, index) in searchedUserList" :key="index">
                     <div class="flex items-center p-1 py-2 rounded hover:bg-gray-100">
                       <input :id="`assignee-${user.username}`" type="radio" :value="user.username" name="default-radio" v-model="addUserForm.username"
-                             class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300">
+                             class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300" required>
                       <label :for="`assignee-${user.username}`"
                              class="w-full ms-2 text-sm font-medium text-gray-900 rounded">{{ user.username }}</label>
                     </div>
@@ -53,8 +65,7 @@
               </div>
             </div>
             <button type="submit"
-                    class="text-white inline-flex items-center bg-blue-600 hover:bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center"
-                    data-modal-hide="add-user-modal">
+                    class="text-white inline-flex items-center bg-blue-600 hover:bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center">
               Add
             </button>
           </form>
@@ -77,6 +88,7 @@ const route = useRoute()
 
 const addUserForm = {
   "username": "",
+  "userRoles": [],
 }
 
 const userList = ref([
@@ -114,13 +126,20 @@ function getUsers() {
 }
 
 function addUser() {
+  if (addUserForm.userRoles.length < 1) {
+    alert('User roles must be selected')
+    return
+  }
+
   axios.post('/api/projects/' + route.params.project_id + '/users', {
-    "username": addUserForm.username
+    "username": addUserForm.username,
+    "userRoles": addUserForm.userRoles,
   })
   .then(response => {
     console.log(response.data)
     addUserForm.username = ""
-    getUsers()
+    addUserForm.userRoles = []
+    location.reload()
   }).catch(error => {
     console.log(error)
   })

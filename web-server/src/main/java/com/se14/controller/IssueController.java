@@ -37,16 +37,23 @@ public class IssueController {
         this.developerRecommendationService = developerRecommendationService;
     }
 
-
     @GetMapping
-    public IssueDTO getIssue(@PathVariable("projectId") int projectId, @PathVariable("issueId") int issueId) {
+    public ResponseEntity<IssueDTO> getIssue(@PathVariable("projectId") int projectId, @PathVariable("issueId") int issueId, HttpSession session) {
         Project currentProject = projectService.findProjectById(projectId);
+        User user = (User) session.getAttribute("USER");
+        if (user == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        if (!projectService.hasUser(currentProject, user)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
         List<Issue> issues = issueService.searchIssues(currentProject, null);
         Issue detailedIssue = issues.stream()
                 .filter(issue -> issue.getIssueId() == issueId)
                 .findFirst().get();
 
-        return new IssueDTO(detailedIssue);
+        return new ResponseEntity<>(new IssueDTO(detailedIssue), HttpStatus.OK);
     }
 
     @GetMapping("/comments")
