@@ -131,14 +131,14 @@
                             d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
                     </svg>
                   </div>
-                  <input type="text" @input="searchUsers($event)" id="input-group-search"
+                  <input type="text" v-model="assigneeKeyword" id="input-group-search"
                          class="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded bg-gray-50 focus:border-blue-500"
                          placeholder="Search user">
                 </div>
               </div>
 
               <ul class="max-h-48 overflow-y-auto p-3 text-sm text-gray-700 " aria-labelledby="dropdownRadioButton">
-                <li v-for="(user, index) in searchedUserList" :key="index">
+                <li v-for="(user, index) in assigneeSearchedUserList" :key="index">
                   <div class="flex items-center p-1 py-2 rounded hover:bg-gray-100">
                     <input :id="`assignee-${index}`" type="radio" :value="user.username" name="default-radio"
                            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
@@ -200,14 +200,14 @@
                             d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
                     </svg>
                   </div>
-                  <input type="text" @input="searchUsers($event)" id="input-group-search"
+                  <input type="text" v-model="fixerKeyword" id="input-group-search"
                          class="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded bg-gray-50 focus:border-blue-500"
                          placeholder="Search user">
                 </div>
               </div>
 
               <ul class="max-h-48 overflow-y-auto p-3 text-sm text-gray-700 " aria-labelledby="dropdownRadioButton">
-                <li v-for="(user, index) in searchedUserList" :key="index">
+                <li v-for="(user, index) in fixerSearchedUserList" :key="index">
                   <div class="flex items-center p-1 py-2 rounded hover:bg-gray-100">
                     <input :id="`assignee-${index}`" type="radio" :value="user.username" name="default-radio"
                            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
@@ -263,14 +263,14 @@
                             d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
                     </svg>
                   </div>
-                  <input type="text" @input="searchUsers($event)" id="input-group-search"
+                  <input type="text" v-model="reporterKeyword" id="input-group-search"
                          class="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded bg-gray-50 focus:border-blue-500"
                          placeholder="Search user">
                 </div>
               </div>
 
               <ul class="max-h-48 overflow-y-auto p-3 text-sm text-gray-700 " aria-labelledby="dropdownRadioButton">
-                <li v-for="(user, index) in searchedUserList" :key="index">
+                <li v-for="(user, index) in reporterSearchedUserList" :key="index">
                   <div class="flex items-center p-1 py-2 rounded hover:bg-gray-100">
                     <input :id="`reporter-${index}`" type="radio" :value="user.username" name="default-radio"
                            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
@@ -296,7 +296,9 @@
       <div
           class="w-full md:w-auto flex flex-col md:flex-row space-y-2 md:space-y-0 items-stretch md:items-center justify-end md:space-x-3 flex-shrink-0">
         <button data-modal-target="report-issue-modal" data-modal-toggle="report-issue-modal"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-lg">Report Issue
+                class="text-white font-bold py-2 px-4 rounded shadow-lg" v-bind:disabled="!isTester" v-bind:title="isTester ? false : 'You do not have permission to report issue'"
+                :class="isTester ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-500 hover:bg-gray-600'">
+          Report Issue
         </button>
       </div>
 
@@ -328,13 +330,13 @@
                   <label for="name" class="block mb-2 text-sm font-medium text-gray-900">Title</label>
                   <input type="text" v-model="issueForm.title" name="name" id="name"
                          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:border-blue-600 block w-full p-2.5"
-                         placeholder="Type issue name" required="">
+                         placeholder="Type issue name" required>
                 </div>
                 <div class="col-span-2">
                   <label for="description" class="block mb-2 text-sm font-medium text-gray-900">Description</label>
                   <textarea id="description" v-model="issueForm.description" rows="4"
                             class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:border-blue-500 resize-none"
-                            placeholder="Write issue description here"></textarea>
+                            placeholder="Write issue description here" required></textarea>
                 </div>
                 <div class="col-span-2 sm:col-span-1">
                   <label for="status"
@@ -359,8 +361,7 @@
                 </div>
               </div>
               <button type="submit"
-                      class="text-white inline-flex items-center bg-blue-600 hover:bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center"
-                      data-modal-hide="report-issue-modal">
+                      class="text-white inline-flex items-center bg-blue-600 hover:bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5 text-center">
                 Save
               </button>
             </form>
@@ -414,6 +415,7 @@ import {useRoute, useRouter} from "vue-router";
 import StatusBadge from "@/components/StatusBadge.vue";
 import PriorityBadge from "@/components/PriorityBadge.vue";
 import store from "@/vuex/store";
+import {HttpStatusCode} from "axios";
 
 const axios = inject('axios')
 const route = useRoute()
@@ -426,7 +428,13 @@ const userList = ref([
   }
 ])
 
-const searchedUserList = ref([])
+const assigneeKeyword = ref("")
+const fixerKeyword = ref("")
+const reporterKeyword = ref("")
+
+const assigneeSearchedUserList = ref([])
+const fixerSearchedUserList = ref([])
+const reporterSearchedUserList = ref([])
 
 const issueList = ref([])
 const issueForm = {
@@ -444,6 +452,10 @@ const filter = ref({
   "reporter": "",
 })
 
+const isTester = computed(() => {
+  return store.getters.hasRole('ADMIN') || store.getters.hasRole('TESTER')
+})
+
 let searchTimeout = null
 
 onMounted(() => {
@@ -455,27 +467,39 @@ onMounted(() => {
 
 watch(filter.value, () => searchIssues())
 
-function resetFilter() {
-  filter.value = {
-    "keyword": "",
-    "status": null,
-    "priority": null,
-    "assignee": "",
-    "fixer": "",
-    "reporter": "",
-  }
-  watch(filter.value, () => searchIssues())
-  searchIssues()
-}
-
-function searchUsers(event) {
-  const keyword = event.target.value
-
-  searchedUserList.value = userList.value
+watch(assigneeKeyword, () => {
+  assigneeSearchedUserList.value = userList.value
       .filter(user => user.username !== store.state.username)
-      .filter(user => user.username.toLowerCase().includes(keyword.toLowerCase()))
-}
+      .filter(user => user.username.toLowerCase().includes(assigneeKeyword.value.toLowerCase()))
+})
+watch(fixerKeyword, () => {
+  fixerSearchedUserList.value = userList.value
+      .filter(user => user.username !== store.state.username)
+      .filter(user => user.username.toLowerCase().includes(fixerKeyword.value.toLowerCase()))
+})
+watch(reporterKeyword, () => {
+  reporterSearchedUserList.value = userList.value
+      .filter(user => user.username !== store.state.username)
+      .filter(user => user.username.toLowerCase().includes(reporterKeyword.value.toLowerCase()))
+})
 
+function resetFilter() {
+  // filter.value = {
+  //   "keyword": "",
+  //   "status": null,
+  //   "priority": null,
+  //   "assignee": "",
+  //   "fixer": "",
+  //   "reporter": "",
+  // }
+  // watch(filter.value, () => searchIssues())
+  //
+  // assigneeKeyword.value = ''
+  // fixerKeyword.value = ''
+  // reporterKeyword.value = ''
+
+  location.reload()
+}
 
 function searchIssues() {
   clearTimeout(searchTimeout)
@@ -483,8 +507,7 @@ function searchIssues() {
 }
 
 function search() {
-  console.log(filter.value.status)
-  router.replace({ path: '/projects/' + route.params.project_id + '/issues', query: filter.value })
+  // router.replace({ path: '/projects/' + route.params.project_id + '/issues', query: filter.value })
 
   axios.get('/api/projects/' + route.params.project_id + '/issues', {
     params: filter.value
@@ -521,6 +544,9 @@ function getIssues() {
     console.log(error)
     if (error.message.indexOf('Network Error') > -1) {
       alert('Network Error\nPlease Try again later')
+    } else if (error.response.status === HttpStatusCode.Forbidden) {
+      alert('You do not have access to this project')
+      router.back()
     }
   })
 }
@@ -530,7 +556,9 @@ function getUsers() {
       .then(response => {
         console.log(response.data)
         userList.value = response.data
-        searchedUserList.value = userList.value.filter(user => user.username !== store.state.username)
+        assigneeSearchedUserList.value = userList.value.filter(user => user.username !== store.state.username)
+        fixerSearchedUserList.value = userList.value.filter(user => user.username !== store.state.username)
+        reporterSearchedUserList.value = userList.value.filter(user => user.username !== store.state.username)
       }).catch(error => {
     console.log(error)
     if (error.message.indexOf('Network Error') > -1) {
@@ -549,7 +577,7 @@ function reportIssue() {
     issueForm.title = ""
     issueForm.description = ""
     issueForm.priority = "major"
-    getIssues()
+    location.reload()
   }).catch(error => {
     console.log(error)
     if (error.message.indexOf('Network Error') > -1) {

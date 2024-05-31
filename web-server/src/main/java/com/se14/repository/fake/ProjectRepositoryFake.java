@@ -12,12 +12,12 @@ import java.util.*;
 @Repository
 public class ProjectRepositoryFake implements ProjectRepository {
 
-    private final Map<Long, Project> projects = new HashMap<>();
+    private final Map<Integer, Project> projects = new HashMap<>();
     public UserRepository userRepositoryFake;
 
     public ProjectRepositoryFake(UserRepository userRepositoryFake) {
         // Create 3 projects with IDs 1, 2, and 3
-        for (long i = 1; i <= 3; i++) {
+        for (int i = 1; i <= 3; i++) {
             Project project = new Project();
             project.setProjectId((int) i);
             project.setProjectTitle("Project " + i);
@@ -27,9 +27,9 @@ public class ProjectRepositoryFake implements ProjectRepository {
         int projectId = 1;
         this.userRepositoryFake=userRepositoryFake;
         // Set up members for Project 1
-        Project project1 = projects.get((long)projectId);
+        Project project1 = projects.get((Integer) projectId);
         if (project1 != null) {
-            for (long i = 1; i <= 9; i++) {
+            for (int i = 1; i <= 9; i++) {
                 User user = userRepositoryFake.findById(i).orElse(null);
                 if (user != null) {
                     List<UserRole> roles = new ArrayList<>();
@@ -52,15 +52,18 @@ public class ProjectRepositoryFake implements ProjectRepository {
     @Override
     public Project save(Project project) {
         if (project.getProjectId() == null) {
-            long newId = projects.keySet().stream().mapToLong(Long::longValue).max().orElse(0) + 1;
-            project.setProjectId((int) newId);
+            Integer newId = projects.keySet().stream()
+                    .mapToInt(Integer::intValue)
+                    .max()
+                    .orElse(0) + 1;
+            project.setProjectId((Integer) newId);
         }
-        projects.put(project.getProjectId().longValue(), project);
+        projects.put(project.getProjectId(), project);
         return project;
     }
 
     @Override
-    public Optional<Project> findById(long id) {
+    public Optional<Project> findById(Integer id) {
         return Optional.ofNullable(projects.get(id));
     }
 

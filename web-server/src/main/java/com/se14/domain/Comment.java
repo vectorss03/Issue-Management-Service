@@ -7,7 +7,7 @@ public class Comment {
     private String text;
     private Date timestamp;
     private User author;
-    private int id;
+    private Integer id;
 
     @Override
     public String toString()
@@ -16,10 +16,12 @@ public class Comment {
     }
     // Default constructor
     public Comment() {
+        this.id = -1;
     }
 
     // Parameterized constructor
     public Comment(String commentTitle, String text, Date timestamp, User author) {
+        this.id =-1;
         this.commentTitle = commentTitle;
         this.text = text;
         this.timestamp = timestamp;

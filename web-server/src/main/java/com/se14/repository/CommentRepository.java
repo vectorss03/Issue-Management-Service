@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface CommentRepository {
     Comment save(Comment comment,Issue issue);
-    Optional<Comment> findById(long id);
+    //Optional<Comment> findById(long id);
+    Optional<Comment> findById(Integer id);
+
     List<Comment> findByIssue(Issue issue);
 }

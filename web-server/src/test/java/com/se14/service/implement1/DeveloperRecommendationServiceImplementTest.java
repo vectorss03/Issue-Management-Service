@@ -132,4 +132,39 @@ public class DeveloperRecommendationServiceImplementTest {
         System.out.println("Recommended Developer for small project: " + recommendedDevelopers.get(0).getUsername());
     }
 
+    @Test
+    @DisplayName("Recommend none developer for project has no fixed issues")
+    void testRecommendNoneDeveloperForProject() {
+        // Set up a smaller project with only 2 issues, both fixed by the same developer
+        Project smallProject = new Project();
+        smallProject.setProjectId(2);
+        smallProject.setProjectTitle("Small Project");
+        smallProject.setProjectDescription("A small project with limited issues");
+
+        //List<User> smallProjectUsers = new ArrayList<>();
+        Map<User, List<UserRole>> smallMemberRoles = new HashMap<>();
+        List<Issue> smallProjectIssues = new ArrayList<>();
+
+        // Create one developer and assign them as DEVELOPER
+        User singleDeveloper = new User();
+        singleDeveloper.setUserId(10);
+        singleDeveloper.setUsername("Solo_Developer");
+        //smallProjectUsers.add(singleDeveloper);
+        smallMemberRoles.put(singleDeveloper, Collections.singletonList(UserRole.DEVELOPER));
+
+        smallProject.setMembers(smallMemberRoles);
+
+        // Simulate the scenario for a new issue
+        Issue newIssue = new Issue();
+        newIssue.setTitle("New Minor Feature Request");
+        newIssue.setDescription("Request to add a new button to UI");
+        newIssue.setStatus(IssueStatus.NEW);
+        newIssue.setReportedDate(new Date());
+
+        // Use the recommendation service to get recommendations
+        List<User> recommendedDevelopers = developerRecommendationService.recommendDeveloper(smallProject, newIssue);
+
+        // Assert that only one developer is recommended and it's the correct one
+        assertThat(recommendedDevelopers).hasSize(0);
+    }
 }

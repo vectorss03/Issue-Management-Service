@@ -62,6 +62,7 @@ public class IssueServiceImplement implements IssueService{
     public void assignIssue(Project project,User assigner, Issue issue, User assignee) {
         if (issue.getStatus() == IssueStatus.NEW || issue.getStatus() == IssueStatus.REOPENED) {
             issue.setAssignee(assignee);
+            issue.setFixer(null);
             issue.setStatus(IssueStatus.ASSIGNED);
             issueRepository.save(issue,project);
         }else{
@@ -86,6 +87,6 @@ public class IssueServiceImplement implements IssueService{
         commentRepository.save(newComment, issue);
     }
     @Override
-    public Issue findIssueById(Long id){ return issueRepository.findById(id).orElse(null); }
+    public Issue findIssueById(Integer id){ return issueRepository.findById(id).orElse(null); }
 
 }
