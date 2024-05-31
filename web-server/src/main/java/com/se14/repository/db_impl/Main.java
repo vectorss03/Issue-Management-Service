@@ -17,7 +17,11 @@ public class Main {
 
         //모킹으로 새로운 프로젝트 생성하고 DB에 저장 테스트.
 
+        List<User> list = userDB.findAll();
 
+        for (User user : list) {
+            System.out.println(user.getUsername());
+        }
 
         System.out.println("successful");
     }
