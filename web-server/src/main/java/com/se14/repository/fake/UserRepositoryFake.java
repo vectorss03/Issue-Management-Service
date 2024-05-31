@@ -49,6 +49,6 @@ public class UserRepositoryFake implements UserRepository {
 
     @Override
     public List<User> findAll() {
-        return (List<User>) users.values();
+        return new ArrayList<>(users.values());
     }
 }

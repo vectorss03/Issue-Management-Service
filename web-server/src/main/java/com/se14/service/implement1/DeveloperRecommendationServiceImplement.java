@@ -27,6 +27,10 @@ public class DeveloperRecommendationServiceImplement implements DeveloperRecomme
         List<Issue> issues = project.getIssues().stream().filter(issue -> issue.getFixer() != null).toList();
         List<String> issueTitles = issues.stream().map(Issue::getTitle).toList();
 
+        if (issues.isEmpty()) {
+            return Collections.emptyList();
+        }
+
         EmbeddingResponse embeddingResponse = embeddingClient.embedForResponse(issueTitles);
         List<Embedding> issueEmbeddings = embeddingResponse.getResults();
 
@@ -39,7 +43,6 @@ public class DeveloperRecommendationServiceImplement implements DeveloperRecomme
             User fixer = issues.get(i).getFixer();
             similarityScores.put(similarity, fixer);
         }
-        System.out.println(similarityScores);
 
         // Retrieve top three developers based on highest similarity scores
         List<User> recommendedDevelopers = new ArrayList<>();
