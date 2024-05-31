@@ -49,6 +49,14 @@ public class DBInitializer {
             this.commentDB = commentRepository;
         }
 
+        private static DatabaseObjects instance;
+        public static DatabaseObjects getInstance() {
+            if (instance == null) {
+                instance = DBInitializer.initializeDatabase();
+            }
+            return instance;
+        }
+
         public UserDB getUserDB() {
             return userDB;
         }

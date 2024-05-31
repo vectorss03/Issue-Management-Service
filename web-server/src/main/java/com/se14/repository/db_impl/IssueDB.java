@@ -113,8 +113,8 @@ public class IssueDB implements IssueRepository {
 
 
             //fixer, assignee User 정보 null 확인 후 insert.
-            setNullableInt(statement, 8, issue.getFixer() != null ? issue.getFixer().getUserId() : null);
-            setNullableInt(statement, 9, issue.getAssignee() != null ? issue.getAssignee().getUserId() : null);
+            setNullableInt(statement, 7, issue.getFixer() != null ? issue.getFixer().getUserId() : null);
+            setNullableInt(statement, 8, issue.getAssignee() != null ? issue.getAssignee().getUserId() : null);
 
             //statement.setInt(7, issue.getFixer().getUserId());
             //statement.setInt(8, issue.getAssignee().getUserId());
@@ -191,8 +191,7 @@ public class IssueDB implements IssueRepository {
             assignee = userRepository.findById(resultSet.getInt("assignee_id")).orElse(null);
         }
 
-
-        return new Issue(
+        Issue issue = new Issue(
                 resultSet.getString("title"),
                 resultSet.getString("description"),
                 IssueStatus.valueOf(resultSet.getString("status")),
@@ -203,5 +202,7 @@ public class IssueDB implements IssueRepository {
                 assignee,
                 new ArrayList<>()
         );
+        issue.setIssueId(resultSet.getInt("issue_id"));
+        return issue;
     }
 }

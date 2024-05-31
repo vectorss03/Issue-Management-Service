@@ -139,8 +139,8 @@ public class ProjectDB implements ProjectRepository {
                 statement.setInt(8, issue.getReporter().getUserId());
 
                 //setNullableInt 헬퍼 함수 추가
-                setNullableInt(statement, 8, issue.getFixer() != null ? issue.getFixer().getUserId() : null);
-                setNullableInt(statement, 9, issue.getAssignee() != null ? issue.getAssignee().getUserId() : null);
+                setNullableInt(statement, 9, issue.getFixer() != null ? issue.getFixer().getUserId() : null);
+                setNullableInt(statement, 10, issue.getAssignee() != null ? issue.getAssignee().getUserId() : null);
 
                 statement.addBatch();
             }

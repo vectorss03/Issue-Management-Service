@@ -36,7 +36,7 @@ CREATE TABLE issues (
                         issue_id INT PRIMARY KEY,
                         title VARCHAR(255) NOT NULL,
                         description TEXT NOT NULL,
-                        status ENUM('New','ASSIGNED', 'FIXED', 'RESOLVE', 'CLOSED', 'REOPENED') NOT NULL,
+                        status ENUM('NEW','ASSIGNED', 'FIXED', 'RESOLVED', 'CLOSED', 'REOPENED') NOT NULL,
                         priority ENUM('BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'TRIVIAL') NOT NULL,
                         date DATE NOT NULL,
                         project_id VARCHAR(255),
@@ -50,7 +50,7 @@ CREATE TABLE issues (
 );
 
 CREATE TABLE comments (
-                          comment_id INT PRIMARY KEY,
+                          comment_id INT AUTO_INCREMENT PRIMARY KEY,
                           title VARCHAR(255) NOT NULL,
                           text TEXT NOT NULL,
                           timestamp DATETIME NOT NULL,

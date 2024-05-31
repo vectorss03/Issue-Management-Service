@@ -4,6 +4,7 @@ import com.mysql.cj.x.protobuf.MysqlxExpr;
 import com.se14.domain.*;
 import com.se14.repository.ProjectRepository;
 import com.se14.repository.UserRepository;
+import com.se14.repository.db_impl.DBInitializer;
 import com.se14.service.ProjectService;
 import org.springframework.stereotype.Service;
 
@@ -18,8 +19,8 @@ public class ProjectServiceImplement implements ProjectService {
     private final UserRepository userRepository;
 
     public ProjectServiceImplement(ProjectRepository projectRepo, UserRepository userRepo) {
-        this.projectRepository = projectRepo;
-        this.userRepository = userRepo;
+        this.projectRepository = DBInitializer.DatabaseObjects.getInstance().getProjectDB();
+        this.userRepository = DBInitializer.DatabaseObjects.getInstance().getUserDB();
         // 필요한 필드를 여기에 초기화
         // 예: this.anotherRepo = anotherRepo;
     }
@@ -50,7 +51,7 @@ public class ProjectServiceImplement implements ProjectService {
             newProject.setProjectDescription(description);
 
             // Add the creator as an admin to the project
-            addMemberToProject(newProject, creator, UserRole.ADMIN);
+            addMemberToProject(newProject, creator, Arrays.asList(UserRole.ADMIN));
 
 
             // Save the project to the repository
@@ -65,15 +66,18 @@ public class ProjectServiceImplement implements ProjectService {
     }
 
     @Override
-    public void addMemberToProject(Project project, User user, UserRole role) {
+    public void addMemberToProject(Project project, User user, List<UserRole> roles) {
         try {
             if (!project.getMembers().containsKey(user)) {
                 project.getMembers().put(user, new ArrayList<>());
             }
-            if (!project.getMembers().get(user).contains(role)) {
-                project.getMembers().get(user).add(role);
-            }else {
-                System.out.println("User already has role");
+            List<UserRole> existingRoles = project.getMembers().get(user);
+            for (UserRole role : roles) {
+                if (!existingRoles.contains(role)) {
+                    existingRoles.add(role);
+                } else {
+                    System.out.println("User already has role: " + role);
+                }
             }
             projectRepository.save(project);
         } catch (Exception e) {
@@ -151,7 +155,7 @@ public class ProjectServiceImplement implements ProjectService {
         Map<User, List<UserRole>> members = project.getMembers();
 
         // Check if the user is in the project's members map
-        return members.containsKey(user);
+        return members.keySet().stream().anyMatch(projectUser -> projectUser.getUserId().equals(user.getUserId()));
     }
     @Override
     public Project findProjectById(Integer id) {
@@ -164,10 +168,26 @@ public class ProjectServiceImplement implements ProjectService {
         List<Project> userProjects = new ArrayList<>();
 
         for (Project project : allProjects) {
-            if (project.getMembers().containsKey(user)) {
+            if (project.getMembers().keySet().stream().anyMatch(projectUser -> projectUser.getUserId().equals(user.getUserId())) ) {
                 userProjects.add(project);
             }
         }
         return userProjects;
+    }
+
+    @Override
+    public List<User> findUserByProject(Project project) {
+        Project foundProject = projectRepository.findById(project.getProjectId()).orElse(null);
+        if (foundProject == null) {
+            throw new IllegalArgumentException("Project not found");
+        }
+        return new ArrayList<>(foundProject.getMembers().keySet());
+    }
+
+    @Override
+    public List<UserRole> getUserRoles(Project project, User user) throws Exception {
+        return project.getMembers().entrySet().stream()
+                .filter(entry -> entry.getKey().getUserId().equals(user.getUserId()))
+                .findFirst().orElseThrow(Exception::new).getValue();
     }
 }

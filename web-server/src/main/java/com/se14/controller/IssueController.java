@@ -58,11 +58,7 @@ public class IssueController {
 
     @GetMapping("/comments")
     public List<CommentDTO> getComments(@PathVariable("projectId") int projectId, @PathVariable("issueId") int issueId) {
-        Project currentProject = projectService.findProjectById(projectId);
-        List<Issue> issues = issueService.searchIssues(currentProject, null);
-        Issue detailedIssue = issues.stream()
-                .filter(issue -> issue.getIssueId() == issueId)
-                .findFirst().get();
+        Issue detailedIssue = issueService.findIssueById(issueId);
 
         return detailedIssue.getComments().stream().map(CommentDTO::new).toList();
     }
@@ -72,11 +68,7 @@ public class IssueController {
 
         User user = (User) session.getAttribute("USER");
         Project currentProject = projectService.findProjectById(projectId);
-        List<Issue> issues = issueService.searchIssues(currentProject, null);
-
-        Issue detailedIssue = issues.stream()
-                .filter(issue -> issue.getIssueId() == issueId)
-                .findFirst().get();
+        Issue detailedIssue = issueService.findIssueById(issueId);
 
         String content = params.get("content");
         System.out.println(content);
@@ -90,11 +82,8 @@ public class IssueController {
     @PutMapping("/assignee")
     public ResponseEntity<Void> assignDeveloper(@PathVariable("projectId") int projectId, @PathVariable("issueId") int issueId, @RequestBody Map<String, String> params) {
         Project currentProject = projectService.findProjectById(projectId);
-        List<Issue> issues = issueService.searchIssues(currentProject, null);
+        Issue detailedIssue = issueService.findIssueById(issueId);
 
-        Issue detailedIssue = issues.stream()
-                .filter(issue -> issue.getIssueId() == issueId)
-                .findFirst().get();
         User assignee = userService.findByUsername(params.get("assignee"));
 
         issueService.assignIssue(currentProject,null, detailedIssue, assignee);
@@ -108,11 +97,7 @@ public class IssueController {
     @GetMapping("/assignee/recommended")
     public List<UserDTO> getDeveloperRecommend(@PathVariable("projectId") int projectId, @PathVariable("issueId") int issueId) {
         Project currentProject = projectService.findProjectById(projectId);
-        List<Issue> issues = issueService.searchIssues(currentProject, null);
-
-        Issue detailedIssue = issues.stream()
-                .filter(issue -> issue.getIssueId() == issueId)
-                .findFirst().get();
+        Issue detailedIssue = issueService.findIssueById(issueId);
 
         System.out.println(developerRecommendationService.recommendDeveloper(currentProject, detailedIssue));
 
@@ -124,11 +109,7 @@ public class IssueController {
 
         User user = (User) session.getAttribute("USER");
         Project currentProject = projectService.findProjectById(projectId);
-        List<Issue> issues = issueService.searchIssues(currentProject, null);
-
-        Issue detailedIssue = issues.stream()
-                .filter(issue -> issue.getIssueId() == issueId)
-                .findFirst().get();
+        Issue detailedIssue = issueService.findIssueById(issueId);
 
 
         IssueStatus status = IssueStatus.valueOf(params.get("status"));
