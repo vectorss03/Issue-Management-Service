@@ -1,6 +1,7 @@
 package com.se14.controller;
 
 import com.se14.controller.modal.AssignDeveloperController;
+import com.se14.controller.panel.AnalysisController;
 import com.se14.view.modal.AddUserModal;
 import com.se14.controller.modal.CreateProjectController;
 import com.se14.controller.modal.ReportIssueController;
@@ -117,6 +118,10 @@ public class ViewController {
             case ISSUE_DETAIL:
                 mainController.showIssueDetailPanel();
                 issueDetailController.displayDetailedIssue();
+                break;
+            case ANALYSIS:
+                mainController.showAnalysisPanel();
+                analysisController.displayCharts();
                 break;
         }
     }

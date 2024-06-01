@@ -11,14 +11,14 @@ public class SearchCriteria {
     private IssuePriority priority;
     private Date startDate;
     private Date endDate;
-    private User reporter;
-    private User fixer;
-    private User assignee;
+    private String reporter;
+    private String fixer;
+    private String assignee;
 
     // Constructors
     public SearchCriteria() { }
     public SearchCriteria(String title, String description, IssueStatus status, IssuePriority priority,
-                          Date startDate, Date endDate, User reporter, User fixer, User assignee) {
+                          Date startDate, Date endDate, String reporter, String fixer, String assignee) {
         this.title = title;
         this.description = description;
         this.status = status;
@@ -64,27 +64,27 @@ public class SearchCriteria {
         this.priority = priority;
     }
 
-    public User getReporter() {
+    public String getReporter() {
         return reporter;
     }
 
-    public void setReporter(User reporter) {
+    public void setReporter(String reporter) {
         this.reporter = reporter;
     }
 
-    public User getFixer() {
+    public String getFixer() {
         return fixer;
     }
 
-    public void setFixer(User fixer) {
+    public void setFixer(String fixer) {
         this.fixer = fixer;
     }
 
-    public User getAssignee() {
+    public String getAssignee() {
         return assignee;
     }
 
-    public void setAssignee(User assignee) {
+    public void setAssignee(String assignee) {
         this.assignee = assignee;
     }
 

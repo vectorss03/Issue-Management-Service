@@ -68,7 +68,11 @@ public class AssignDeveloperModal extends JFrame {
         assignButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                controller.assignDeveloper(group.getSelection().getActionCommand());
+                if (group.getSelection() != null) {
+                    controller.assignDeveloper(group.getSelection().getActionCommand());
+                } else {
+                    JOptionPane.showMessageDialog(null, "You must select developer to assign", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
 

@@ -17,6 +17,7 @@ import org.apache.hc.core5.http.*;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.net.URIBuilder;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -60,8 +61,10 @@ public class ProjectController {
                 System.out.println("failed to load projects");
                 view.setProjects(new ArrayList<>());
             }
-        } catch (IOException | URISyntaxException | HttpException e) {
+        } catch (HttpException | URISyntaxException e) {
             throw new RuntimeException(e);
+        } catch (IOException e) {
+            view.showServerErrorMessage();
         }
     }
 

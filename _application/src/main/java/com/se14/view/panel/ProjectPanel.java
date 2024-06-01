@@ -57,4 +57,8 @@ public class ProjectPanel extends JPanel {
         revalidate();
         repaint();
     }
+
+    public void showServerErrorMessage() {
+        JOptionPane.showMessageDialog(this, "Server connection error\nTry Again later", "Error", JOptionPane.ERROR_MESSAGE);
+    }
 }
