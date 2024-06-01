@@ -78,8 +78,8 @@ public class ProjectController {
 
         SearchCriteria searchCriteria = new SearchCriteria();
         searchCriteria.setTitle(filter.getKeyword());
-        if (filter.getStatus() != null) searchCriteria.setStatus(IssueStatus.valueOf(filter.getStatus()));
-        if (filter.getPriority() != null) searchCriteria.setPriority(IssuePriority.valueOf(filter.getPriority()));
+        if (filter.getStatus() != null && !filter.getStatus().isEmpty()) searchCriteria.setStatus(IssueStatus.valueOf(filter.getStatus()));
+        if (filter.getPriority() != null && !filter.getPriority().isEmpty()) searchCriteria.setPriority(IssuePriority.valueOf(filter.getPriority()));
         searchCriteria.setAssignee(userService.findByUsername(filter.getAssignee()));
         searchCriteria.setFixer(userService.findByUsername(filter.getFixer()));
         searchCriteria.setReporter(userService.findByUsername(filter.getReporter()));

@@ -4,15 +4,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.se14.domain.User;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
+@NoArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class UserDTO {
     @JsonProperty
-    private final int userId;
+    private int userId;
     @JsonProperty
-    private final String username;
+    private String username;
     @JsonProperty
-    private final String email;
+    private String email;
 
     public UserDTO(User user) {
         this.userId = user.getUserId();

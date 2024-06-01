@@ -4,19 +4,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.se14.domain.Comment;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.text.SimpleDateFormat;
 
+@Data
+@NoArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class CommentDTO {
     @JsonProperty
-    private final int commentId;
+    private int commentId;
     @JsonProperty
-    private final String content;
+    private String content;
     @JsonProperty
-    private final String author;
+    private String author;
     @JsonProperty
-    private final String timeStamp;
+    private String timeStamp;
 
     public CommentDTO(Comment comment) {
         this.commentId = (int) comment.getID();

@@ -6,9 +6,13 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.se14.domain.Issue;
 import com.se14.domain.IssuePriority;
 import com.se14.domain.IssueStatus;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.text.SimpleDateFormat;
 
+@Data
+@NoArgsConstructor
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class IssueDTO {
     @JsonProperty
@@ -36,7 +40,7 @@ public class IssueDTO {
         this.description = issue.getDescription();
         this.status = issue.getStatus();
         this.priority = issue.getPriority();
-        this.reportedDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(issue.getReportedDate());
+        if (reportedDate != null) this.reportedDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(issue.getReportedDate());
         this.reporter = issue.getReporter() == null ? null : issue.getReporter().getUsername();
         this.fixer = issue.getFixer() == null ? null : issue.getFixer().getUsername();
         this.assignee = issue.getAssignee() == null ? null : issue.getAssignee().getUsername();

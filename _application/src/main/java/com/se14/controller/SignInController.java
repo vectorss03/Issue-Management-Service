@@ -4,6 +4,7 @@ import com.se14.APIServer;
 import com.se14.domain.User;
 import com.se14.view.LoginView;
 import com.se14.view.SignInView;
+import lombok.Setter;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.core5.http.HttpHeaders;
@@ -17,15 +18,19 @@ import java.net.URISyntaxException;
 
 public class SignInController {
     private final ViewController viewController;
-    private final SignInView view;
+    @Setter
+    private SignInView view;
 
     private final HttpClient client;
 
-    public SignInController(ViewController viewController, SignInView view) {
+    public SignInController(ViewController viewController) {
         this.viewController = viewController;
-        this.view = view;
 
         client = viewController.getClient();
+    }
+
+    public void showView() {
+        view.setVisible(true);
     }
 
     public void attemptSignIn(String username, String password, String email){
@@ -35,7 +40,7 @@ public class SignInController {
                     .addParameter("password", password)
                     .addParameter("email", email)
                     .build();
-            System.out.println(uri.toString());
+            System.out.println("GET: " + uri.toString());
 
             HttpGet getRequest = new HttpGet(uri);
             getRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");

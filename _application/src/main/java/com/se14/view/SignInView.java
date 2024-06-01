@@ -11,15 +11,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class SignInView extends JFrame {
-    @Setter
-    private SignInController controller;
+    private final SignInController controller;
 
     private JTextField usernameField;
     private JPasswordField passwordField;
     private JTextField emailField;
     private JButton signInButton;
 
-    public SignInView() {
+    public SignInView(SignInController controller) {
+        this.controller = controller;
+
         setTitle("Sign In");
         setSize(300, 180);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);

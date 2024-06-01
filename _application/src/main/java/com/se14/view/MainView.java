@@ -1,12 +1,12 @@
 package com.se14.view;
 
 import com.se14.controller.MainController;
-import com.se14.domain.User;
-import com.se14.dto.ProjectDTO;
+import com.se14.domain.UserRole;
+import com.se14.dto.UserDTO;
+import com.se14.view.panel.AnalysisPanel;
 import com.se14.view.panel.IssueDetailPanel;
 import com.se14.view.panel.IssuePanel;
 import com.se14.view.panel.ProjectPanel;
-import lombok.Setter;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,8 +15,7 @@ import java.awt.event.ActionListener;
 import java.util.List;
 
 public class MainView extends JFrame {
-    @Setter
-    private MainController controller;
+    private final MainController controller;
 
     private JButton loginButton;
     private JButton signInButton;
@@ -26,12 +25,18 @@ public class MainView extends JFrame {
     private CardLayout cardLayout;  // CardLayout 관리자
     private ProjectPanel projectPanel;  // 프로젝트 목록을 보여주는 패널
     private IssueDetailPanel issueDetailPanel;  // 이슈 상세정보를 보여주는 패널
+    private AnalysisPanel analysisPanel; // 프로젝트 통계 보여주는 패널
 
     private JButton homeButton;
     private JButton refreshButton;
+    private JButton addUserButton;
+    private JButton analysisButton;
+    private JButton projectHomeButton;
     private IssuePanel issuePanel;
 
-    public MainView() {
+    public MainView(MainController controller, ProjectPanel projectPanel, IssuePanel issuePanel, IssueDetailPanel issueDetailPanel, AnalysisPanel analysisPanel) {
+        this.controller = controller;
+
         setTitle("Project Main Page");
         setSize(1200, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -50,11 +55,18 @@ public class MainView extends JFrame {
         userLabel = new JLabel("Welcome, Guest");
         homeButton = new JButton("Home");
         refreshButton = new JButton("Refresh");
+        addUserButton = new JButton("Add User");
+        analysisButton = new JButton("Analysis");
+        projectHomeButton = new JButton("Project Home");
 
         buttonPanel.add(homeButton);
         buttonPanel.add(refreshButton);
         buttonPanel.add(loginButton);
         buttonPanel.add(signInButton);
+        buttonPanel.add(projectHomeButton);
+        buttonPanel.add(analysisButton);
+        buttonPanel.add(addUserButton);
+
 
         rightPanel.add(userLabel);
         rightPanel.add(logoutButton);
@@ -62,13 +74,15 @@ public class MainView extends JFrame {
         topPanel.add(buttonPanel, BorderLayout.WEST);
         topPanel.add(rightPanel, BorderLayout.EAST);
 
-        projectPanel = new ProjectPanel();
-        issuePanel = new IssuePanel();
-        issueDetailPanel = new IssueDetailPanel();
-//
+        this.projectPanel = projectPanel;
+        this.issuePanel = issuePanel;
+        this.issueDetailPanel = issueDetailPanel;
+        this.analysisPanel = analysisPanel;
+
         cardPanel.add(projectPanel, "Projects");
         cardPanel.add(issuePanel, "Issues");
         cardPanel.add(issueDetailPanel, "IssueDetail");
+        cardPanel.add(analysisPanel, "Analysis");
 
         add(topPanel, BorderLayout.NORTH);
         add(cardPanel, BorderLayout.CENTER);
@@ -111,16 +125,39 @@ public class MainView extends JFrame {
                 controller.refresh();
             }
         });
+
+        analysisButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showAnalysisPanel();
+            }
+        });
+
+        projectHomeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showIssuePanel();
+            }
+        });
+
+        addUserButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                controller.showAddUserModal();
+            }
+        });
     }
 
-    public void updateUser(User user) {
+    public void updateHeader(UserDTO user, List<UserRole> userRoles) {
         if (user != null) {
             setLoggedIn(true, user.getUsername());
         } else {
             setLoggedIn(false, "");
         }
-        controller.displayUserProjects();
-//        displayUserProjects();
+
+        if (userRoles != null) {
+            addUserButton.setEnabled(userRoles.contains(UserRole.ADMIN));
+        }
     }
 
     public void setLoggedIn(boolean loggedIn, String username) {
@@ -139,13 +176,31 @@ public class MainView extends JFrame {
         }
     }
 
-    public void setProjects(List<ProjectDTO> projects) {
-        projectPanel.setProjects(projects);
+    public void showProjectPanel() {
+        cardLayout.show(cardPanel, "Projects");
+        addUserButton.setVisible(false);
+        analysisButton.setVisible(false);
+        projectHomeButton.setVisible(false);
     }
 
-    public void showPanel(String panel) {
-        cardLayout.show(cardPanel, panel);
+    public void showIssuePanel() {
+        cardLayout.show(cardPanel, "Issues");
+        addUserButton.setVisible(true);
+        analysisButton.setVisible(true);
+        projectHomeButton.setVisible(false);
     }
 
+    public void showIssueDetailPanel() {
+        cardLayout.show(cardPanel, "IssueDetail");
+        addUserButton.setVisible(true);
+        analysisButton.setVisible(true);
+        projectHomeButton.setVisible(true);
+    }
 
+    public void showAnalysisPanel() {
+        cardLayout.show(cardPanel, "Analysis");
+        addUserButton.setVisible(true);
+        analysisButton.setVisible(false);
+        projectHomeButton.setVisible(true);
+    }
 }

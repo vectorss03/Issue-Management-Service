@@ -1,8 +1,11 @@
 package com.se14.controller;
 
 import com.se14.APIServer;
+import com.se14.domain.MainViewPanel;
 import com.se14.domain.User;
+import com.se14.dto.UserDTO;
 import com.se14.view.LoginView;
+import lombok.Setter;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.classic.HttpClient;
@@ -21,15 +24,19 @@ import java.net.URISyntaxException;
 
 public class LoginController {
     private final ViewController viewController;
-    private final LoginView view;
+    @Setter
+    private LoginView view;
 
     private final HttpClient client;
 
-    public LoginController(ViewController viewController, LoginView view) {
+    public LoginController(ViewController viewController) {
         this.viewController = viewController;
-        this.view = view;
 
         client = viewController.getClient();
+    }
+
+    public void showView() {
+        view.setVisible(true);
     }
 
     public void attemptLogin(String username, String password){
@@ -38,7 +45,7 @@ public class LoginController {
                     .addParameter("username", username)
                     .addParameter("password", password)
                     .build();
-            System.out.println(uri.toString());
+            System.out.println("GET: " + uri.toString());
 
             HttpGet getRequest = new HttpGet(uri);
             getRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");
@@ -50,10 +57,10 @@ public class LoginController {
 
                 User user = new User(password);
                 user.setUsername(username);
-                viewController.getSession().setCurrentUser(user);
+                viewController.getSession().setCurrentUser(new UserDTO(user));
 
                 view.dispose();
-                viewController.showMainView();
+                viewController.setCurrentPanel(MainViewPanel.PROJECT);
             } else {
                 view.showErrorMessage("Invalid username or password");
             }

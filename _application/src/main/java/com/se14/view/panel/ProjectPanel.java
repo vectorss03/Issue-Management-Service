@@ -1,7 +1,8 @@
 package com.se14.view.panel;
 
-import com.se14.domain.Project;
+import com.se14.controller.panel.ProjectController;
 import com.se14.dto.ProjectDTO;
+
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -9,12 +10,27 @@ import java.awt.event.ActionListener;
 import java.util.List;
 
 public class ProjectPanel extends JPanel {
+    private final ProjectController controller;
+
     private JButton createProjectButton;
-    public ProjectPanel() {
+    public ProjectPanel(ProjectController controller) {
+        this.controller = controller;
+
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
         createProjectButton = new JButton("Create Project");
         add(createProjectButton);
+
+        createProjectButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (controller.isAuthenticated()) {
+                    controller.showCreateProjectModal();
+                } else {
+                    JOptionPane.showMessageDialog(null, "You must logged in to create project", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
     }
 
     public void setProjects(List<ProjectDTO> projects) {
@@ -26,7 +42,9 @@ public class ProjectPanel extends JPanel {
             projectButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    String projectId = e.getActionCommand();
+                    Integer projectId = Integer.valueOf(e.getActionCommand());
+                    System.out.println("Selected Project ID: " + projectId);
+                    controller.selectProject(projectId);
 //                    Project currentProject = projectService.findProjectById(Long.parseLong(projectId));
 //                    sessionService.setCurrentProject(currentProject);
 //                    displayProjectIssues(currentProject);
@@ -38,11 +56,5 @@ public class ProjectPanel extends JPanel {
         }
         revalidate();
         repaint();
-    }
-    public void addCreateProjectButtonListener(ActionListener listener) {
-        createProjectButton.addActionListener(listener);
-    }
-    public void setCreateProjectButtonVisible(boolean visible) {
-        createProjectButton.setVisible(visible);
     }
 }

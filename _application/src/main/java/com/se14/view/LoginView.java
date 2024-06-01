@@ -8,17 +8,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class LoginView extends JFrame{
-    private LoginController controller;
+    private final LoginController controller;
 
     private JTextField usernameField;
     private JPasswordField passwordField;
     private JButton loginButton;
 
-    public void setController(LoginController controller) {
+    public LoginView(LoginController controller) {
         this.controller = controller;
-    }
 
-    public LoginView() {
         setTitle("Login");
         setSize(300, 150);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
