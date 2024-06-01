@@ -8,13 +8,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Service
+
 public class UserServiceImplement implements UserService {
 
     private final UserRepository userRepository;
 
     public UserServiceImplement(UserRepository userRepository) {
-        this.userRepository = DBInitializer.DatabaseObjects.getInstance().getUserDB();
+        this.userRepository = userRepository;
     }
 
     @Override

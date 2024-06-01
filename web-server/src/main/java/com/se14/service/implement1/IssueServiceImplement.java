@@ -13,16 +13,16 @@ import java.util.List;
 import java.util.Date;
 import java.util.stream.Collectors;
 
-@Service
+
 public class IssueServiceImplement implements IssueService{
     private final IssueRepository issueRepository;
     private final ProjectRepository projectRepository;
     private final CommentRepository commentRepository;
 
     public IssueServiceImplement(IssueRepository issueRepository, ProjectRepository projectRepository, CommentRepository commentRepository) {
-        this.issueRepository = DBInitializer.DatabaseObjects.getInstance().getIssueDB();
-        this.projectRepository = DBInitializer.DatabaseObjects.getInstance().getProjectDB();
-        this.commentRepository = DBInitializer.DatabaseObjects.getInstance().getCommentDB();
+        this.issueRepository = issueRepository;
+        this.projectRepository = projectRepository;
+        this.commentRepository = commentRepository;
     }
     @Override
     public void reportIssue(Project project, User reporter, String title, String description, IssuePriority priority) {
