@@ -1,10 +1,17 @@
 # Issue-Management-Service
 
 ## Web-Server
+```
+cd web-server
+```
+
+### Set Database Connection
+```
+db-connection.bat
+```
 
 ### Build Executable Jar
 ```
-cd web-server
 gradlew build
 ```
 
@@ -13,7 +20,7 @@ gradlew build
 java -jar "build\libs\Web_Server-0.0.1-SNAPSHOT.jar"
 ```
 
-### Website
+### Website Link  &nbsp; [Visit](http://localhost:8080/)
 ```
 http://localhost:8080
 ```
@@ -23,10 +30,12 @@ http://localhost:8080
 
 
 ## GUI Application
+```
+cd application
+```
 
 ### Build Executable Jar
 ```
-cd application
 gradlew build
 ```
 
