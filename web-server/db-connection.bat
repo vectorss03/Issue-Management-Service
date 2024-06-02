@@ -1,6 +1,6 @@
 @echo off
 
-set connection=127.0.0.1:3305
+set connection=127.0.0.1:3305/se14
 set user=root
 set password=1234
 
