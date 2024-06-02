@@ -9,10 +9,18 @@ cd web-server
 ```
 db-connection.bat
 ```
-
+### Set Database Connection for OSX or Unix
+```
+./db-connection.sh
+```
 ### Build Executable Jar
 ```
 gradlew build
+```
+### Build Executable Jar for OSX or Unix
+```
+chmod +x gradlew
+./gradlew build
 ```
 
 ### Run 
@@ -38,7 +46,11 @@ cd application
 ```
 gradlew build
 ```
-
+### Build Executable Jar for OSX or Unix
+```
+chmod +x gradlew
+./gradlew build
+```
 ### Run 
 ```
 java -jar "build\libs\application-1.0-SNAPSHOT.jar"
