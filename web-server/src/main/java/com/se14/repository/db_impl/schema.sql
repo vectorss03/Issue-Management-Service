@@ -38,7 +38,7 @@ CREATE TABLE issues (
                         description TEXT NOT NULL,
                         status ENUM('NEW','ASSIGNED', 'FIXED', 'RESOLVED', 'CLOSED', 'REOPENED') NOT NULL,
                         priority ENUM('BLOCKER', 'CRITICAL', 'MAJOR', 'MINOR', 'TRIVIAL') NOT NULL,
-                        date DATE NOT NULL,
+                        date TIMESTAMP NOT NULL,
                         project_id VARCHAR(255),
                         reporter_id INT,
                         fixer_id INT,

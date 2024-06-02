@@ -47,7 +47,7 @@ public class DeveloperRecommendationServiceImplement implements DeveloperRecomme
         // Retrieve top three developers based on highest similarity scores
         List<User> recommendedDevelopers = new ArrayList<>();
         for (Map.Entry<Double, User> entry : similarityScores.descendingMap().entrySet()) {
-            if (recommendedDevelopers.size() < 3 && !recommendedDevelopers.contains(entry.getValue())) {
+            if (recommendedDevelopers.size() < 3 && recommendedDevelopers.stream().noneMatch(user -> user.getUserId().equals(entry.getValue().getUserId()))) {
                 recommendedDevelopers.add(entry.getValue());
             }
             if (recommendedDevelopers.size() == 3) {

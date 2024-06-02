@@ -47,7 +47,7 @@ public class IssueServiceImplementTests {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+//        MockitoAnnotations.openMocks(this);
         project_test = new Project();
         project_test.setIssues(new ArrayList<>());
         user_test = new User();

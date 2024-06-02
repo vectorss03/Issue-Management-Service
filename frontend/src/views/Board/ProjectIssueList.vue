@@ -91,7 +91,7 @@
 
           <button id="assigneeDropdownButton" data-dropdown-toggle="assigneeDropdown"
                   class="mx-2.5 text-black focus:outline-none font-medium rounded text-sm px-2 py-2.5 text-center inline-flex items-center"
-                  :class="filter.assignee || filter.assignee == null ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
+                  :class="filter.assignee || filter.assignee === 'Unassigned' ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
                   type="button" data-dropdown-offset-skidding="68">
             Assignee
             <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -106,14 +106,14 @@
                class="z-10 hidden bg-white divide-y divide-gray-100 rounded shadow-xl outline outline-1 outline-gray-100">
             <div class="px-3 py-3 text-sm text-gray-900">
               <div class="py-2 flex items-center p-1 rounded hover:bg-gray-100">
-                <input id="assignee-me" type="radio" :value="myName" name="default-radio"
+                <input id="assignee-me" type="radio" :value="myName"
                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                        v-model="filter.assignee">
                 <label for="assignee-me" class="w-full ms-2 text-sm font-medium text-gray-900 rounded">Me
                   ({{ myName }})</label>
               </div>
               <div class="py-2 flex items-center p-1 rounded hover:bg-gray-100">
-                <input id="assignee-unassigned" type="radio" :value="null" name="default-radio"
+                <input id="assignee-unassigned" type="radio" :value="'Unassigned'"
                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                        v-model="filter.assignee">
                 <label for="assignee-unassigned" class="w-full ms-2 text-sm font-medium text-gray-900 rounded">Unassigned</label>
@@ -140,7 +140,7 @@
               <ul class="max-h-48 overflow-y-auto p-3 text-sm text-gray-700 " aria-labelledby="dropdownRadioButton">
                 <li v-for="(user, index) in assigneeSearchedUserList" :key="index">
                   <div class="flex items-center p-1 py-2 rounded hover:bg-gray-100">
-                    <input :id="`assignee-${index}`" type="radio" :value="user.username" name="default-radio"
+                    <input :id="`assignee-${index}`" type="radio" :value="user.username"
                            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                            v-model="filter.assignee">
                     <label :for="`assignee-${index}`"
@@ -160,7 +160,7 @@
 
           <button id="fixerDropdownButton" data-dropdown-toggle="fixerDropdown"
                   class="mx-2.5 text-black focus:outline-none font-medium rounded text-sm px-2 py-2.5 text-center inline-flex items-center"
-                  :class="filter.fixer || filter.fixer == null ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
+                  :class="filter.fixer || filter.fixer === 'Unassigned' ? 'bg-blue-200 hover:bg-blue-300' : 'bg-gray-200 hover:bg-gray-300'"
                   type="button" data-dropdown-offset-skidding="80">
             Fixer
             <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -175,14 +175,14 @@
                class="z-10 hidden bg-white divide-y divide-gray-100 rounded shadow-xl outline outline-1 outline-gray-100">
             <div class="px-3 py-3 text-sm text-gray-900">
               <div class="py-2 flex items-center p-1 rounded hover:bg-gray-100">
-                <input id="assignee-me" type="radio" :value="myName" name="default-radio"
+                <input id="fixer-me" type="radio" :value="myName"
                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                        v-model="filter.fixer">
                 <label for="assignee-me" class="w-full ms-2 text-sm font-medium text-gray-900 rounded">Me
                   ({{ myName }})</label>
               </div>
               <div class="py-2 flex items-center p-1 rounded hover:bg-gray-100">
-                <input id="assignee-unassigned" type="radio" :value="null" name="default-radio"
+                <input id="fixer-unassigned" type="radio" :value="'Unassigned'"
                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                        v-model="filter.fixer">
                 <label for="assignee-unassigned" class="w-full ms-2 text-sm font-medium text-gray-900 rounded">Unassigned</label>
@@ -209,10 +209,10 @@
               <ul class="max-h-48 overflow-y-auto p-3 text-sm text-gray-700 " aria-labelledby="dropdownRadioButton">
                 <li v-for="(user, index) in fixerSearchedUserList" :key="index">
                   <div class="flex items-center p-1 py-2 rounded hover:bg-gray-100">
-                    <input :id="`assignee-${index}`" type="radio" :value="user.username" name="default-radio"
+                    <input :id="`fixer-${index}`" type="radio" :value="user.username"
                            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                            v-model="filter.fixer">
-                    <label :for="`assignee-${index}`"
+                    <label :for="`fixer-${index}`"
                            class="w-full ms-2 text-sm font-medium text-gray-900 rounded">{{ user.username }}</label>
                   </div>
                 </li>
@@ -244,7 +244,7 @@
                class="z-10 hidden bg-white divide-y divide-gray-100 rounded shadow-xl outline outline-1 outline-gray-100">
             <div class="px-3 py-3 text-sm text-gray-900">
               <div class="py-2 flex items-center p-1 rounded hover:bg-gray-100">
-                <input id="reporter-me" type="radio" :value="myName" name="default-radio"
+                <input id="reporter-me" type="radio" :value="myName"
                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                        v-model="filter.reporter">
                 <label for="reporter-me" class="w-full ms-2 text-sm font-medium text-gray-900 rounded">Me
@@ -272,7 +272,7 @@
               <ul class="max-h-48 overflow-y-auto p-3 text-sm text-gray-700 " aria-labelledby="dropdownRadioButton">
                 <li v-for="(user, index) in reporterSearchedUserList" :key="index">
                   <div class="flex items-center p-1 py-2 rounded hover:bg-gray-100">
-                    <input :id="`reporter-${index}`" type="radio" :value="user.username" name="default-radio"
+                    <input :id="`reporter-${index}`" type="radio" :value="user.username"
                            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
                            v-model="filter.reporter">
                     <label :for="`reporter-${index}`"

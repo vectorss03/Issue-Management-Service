@@ -134,7 +134,7 @@ public class ProjectDB implements ProjectRepository {
                 statement.setString(3, issue.getDescription());
                 statement.setString(4, issue.getStatus().toString());
                 statement.setString(5, issue.getPriority().toString());
-                statement.setDate(6, new java.sql.Date(issue.getReportedDate().getTime()));
+                statement.setTimestamp(6, new Timestamp(issue.getReportedDate().getTime()));
                 statement.setString(7, project.getProjectId().toString());
                 statement.setInt(8, issue.getReporter().getUserId());
 
@@ -259,7 +259,7 @@ public class ProjectDB implements ProjectRepository {
                 issue.setDescription(resultSet.getString("description"));
                 issue.setStatus(IssueStatus.valueOf(resultSet.getString("status")));
                 issue.setPriority(IssuePriority.valueOf(resultSet.getString("priority")));
-                issue.setReportedDate(resultSet.getDate("date"));
+                issue.setReportedDate(resultSet.getTimestamp("date"));
 
                 // Fetch and set the reporter, fixer, and assignee
                 issue.setReporter(userRepository.findById(resultSet.getInt("reporter_id")).orElse(null));

@@ -50,7 +50,7 @@ public class IssueDB implements IssueRepository {
                 statement.setString(3, issue.getDescription());
                 statement.setString(4, issue.getStatus().name());
                 statement.setString(5, issue.getPriority().name());
-                statement.setDate(6, new java.sql.Date(issue.getReportedDate().getTime()));
+                statement.setTimestamp(6, new Timestamp(issue.getReportedDate().getTime()));
                 statement.setInt(7, issue.getReporter().getUserId());
 
 
@@ -108,7 +108,7 @@ public class IssueDB implements IssueRepository {
             statement.setString(2, issue.getDescription());
             statement.setString(3, issue.getStatus().name());
             statement.setString(4, issue.getPriority().name());
-            statement.setDate(5, new java.sql.Date(issue.getReportedDate().getTime()));
+            statement.setTimestamp(5, new Timestamp(issue.getReportedDate().getTime()));
             statement.setInt(6, issue.getReporter().getUserId());
 
 
@@ -196,7 +196,7 @@ public class IssueDB implements IssueRepository {
                 resultSet.getString("description"),
                 IssueStatus.valueOf(resultSet.getString("status")),
                 IssuePriority.valueOf(resultSet.getString("priority")),
-                resultSet.getDate("date"),
+                resultSet.getTimestamp("date"),
                 reporter,
                 fixer,
                 assignee,
