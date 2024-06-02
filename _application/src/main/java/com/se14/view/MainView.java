@@ -129,14 +129,14 @@ public class MainView extends JFrame {
         analysisButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                showAnalysisPanel();
+                controller.setAnalysisView();
             }
         });
 
         projectHomeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                showIssuePanel();
+                controller.goToProjectHome();
             }
         });
 

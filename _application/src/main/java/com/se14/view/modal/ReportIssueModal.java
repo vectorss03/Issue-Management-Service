@@ -61,7 +61,12 @@ public class ReportIssueModal extends JFrame {
                 String title = titleField.getText();
                 String description = descriptionArea.getText();
                 IssuePriority priority = (IssuePriority) priorityComboBox.getSelectedItem();
-                controller.reportIssue(title, description, priority);
+                if (!title.isEmpty() && !description.isEmpty()) {
+                    controller.reportIssue(title, description, priority);
+                } else {
+                    JOptionPane.showMessageDialog(null, "You must type issue's title and description", "Error", JOptionPane.ERROR_MESSAGE);
+                };
+
             }
         });
     }

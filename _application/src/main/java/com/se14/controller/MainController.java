@@ -82,7 +82,20 @@ public class MainController {
         view.showIssueDetailPanel();
     }
 
+    public void showAnalysisPanel() {
+        view.showAnalysisPanel();
+    }
+
     public void showAddUserModal() {
         viewController.showAddUserModal();
+    }
+
+    public void goToProjectHome() {
+        viewController.getSession().setCurrentIssue(null);
+        viewController.setCurrentPanel(MainViewPanel.ISSUE);
+    }
+
+    public void setAnalysisView() {
+        viewController.setCurrentPanel(MainViewPanel.ANALYSIS);
     }
 }

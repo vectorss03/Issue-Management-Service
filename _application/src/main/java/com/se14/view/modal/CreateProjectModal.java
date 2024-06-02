@@ -47,7 +47,11 @@ public class CreateProjectModal extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 String title = titleField.getText();
                 String description = descriptionArea.getText();
-                controller.createProject(title, description);
+                if (!title.isEmpty() && !description.isEmpty()) {
+                    controller.createProject(title, description);
+                } else {
+                    JOptionPane.showMessageDialog(null, "You must type project's title and description", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
     }
