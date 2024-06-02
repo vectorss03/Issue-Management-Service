@@ -7,6 +7,7 @@ import java.util.List;
 
 public class Issue {
 
+    private Integer issueId = -1;
     private String title;
     private String description;
     private IssueStatus status;
@@ -16,7 +17,7 @@ public class Issue {
     private User fixer;
     private User assignee;
     private List<Comment> comments;
-    private int id = -1;
+
 
 
     @Override
@@ -24,11 +25,6 @@ public class Issue {
         return this.title;
     }
 
-    public static void main(String[] args) {
-        //Issue i = new Issue();
-        //i.setTitle("grfe");
-        System.out.println(new Date());
-    }
     // Default constructor
     public Issue() {
        this.comments = new ArrayList<Comment>();
@@ -141,8 +137,8 @@ public class Issue {
     }
 
     //setter and getter for issue id for DB management
-    public void setIssueId(int id) { this.id = id;
+    public void setIssueId(int id) { this.issueId = id;
     }
 
-    public int getIssueId() { return id; }
+    public int getIssueId() { return issueId; }
 }

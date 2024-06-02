@@ -19,7 +19,6 @@ public class ProjectServiceImplement implements ProjectService {
     private final UserRepository userRepository;
 
     public ProjectServiceImplement(ProjectRepository projectRepo, UserRepository userRepo) {
-
         this.projectRepository = projectRepo;
         this.userRepository = userRepo;
         // 필요한 필드를 여기에 초기화

@@ -1,12 +1,12 @@
 package com.se14;
 
-import com.se14.controller.Controller;
+import com.formdev.flatlaf.FlatLightLaf;
+import com.se14.controller.ViewController;
 
 public class Main {
-
     public static void main(String[] args) {
-        // 애플리케이션 시작
-        Controller.getInstance().showMainView();
-
+        FlatLightLaf.setup();
+        ViewController controller = new ViewController();
+        controller.run();
     }
 }
