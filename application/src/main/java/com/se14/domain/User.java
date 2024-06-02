@@ -1,7 +1,5 @@
 package com.se14.domain;
 
-import java.util.List;
-
 public class User {
     private Integer userId;
     private String username;
@@ -14,7 +12,8 @@ public class User {
         this.userId =-1;
     }
     public User(String password) {
-        this.userId = -1;
+
+        this.userId=-1;
         this.password = password;
     }
     @Override

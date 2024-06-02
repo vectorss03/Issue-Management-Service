@@ -1,19 +1,21 @@
 <template>
-  <div>
-    <div class="flex pl-72">
-      <Bar class="mr-64" :width="700" :height="500" :options="statistics.dailyIssueReported.options"
+  <div class="grid gap-40">
+    <div class="flex items-center justify-around mt-16">
+      <Bar style="width: 30vw; height: 30vh" :options="statistics.dailyIssueReported.options"
            :data="statistics.dailyIssueReported.data"/>
-      <Bar class="" :width="700" :height="500" :options="statistics.monthlyIssueReported.options"
+      <Bar style="width: 30vw; height: 30vh" :options="statistics.monthlyIssueReported.options"
            :data="statistics.monthlyIssueReported.data"/>
+
     </div>
 
-    <div class="flex pl-60 pt-16">
-      <Doughnut class="ml-24 mr-96" :width="600" :height="600" :options="statistics.currentIssueStatus.options"
+    <div class="flex items-center justify-around">
+      <Doughnut style="width: 35vw; height: 35vh" :options="statistics.currentIssueStatus.options"
                 :data="statistics.currentIssueStatus.data"/>
-      <Doughnut class="" :width="600" :height="600" :options="statistics.currentIssuePriority.options"
+      <Doughnut style="width: 35vw; height: 35vh" :options="statistics.currentIssuePriority.options"
                 :data="statistics.currentIssuePriority.data"/>
     </div>
   </div>
+
 </template>
 
 <script setup>
@@ -83,51 +85,45 @@ const statistics = computed(() => {
       }
     },
 
-    currentIssueStatus:
-        {
-          data: {
-            labels: ['New', 'Assigned', 'Fixed', 'Resolved', 'Closed', 'Reopened'],
-            datasets:
-                [{
-                  data: statusData.value,
-                  backgroundColor: ['rgb(255, 99, 132)', 'rgb(255, 159, 64)', 'rgb(54, 162, 235)', 'rgb(75, 192, 192)', 'rgb(201, 203, 207)', 'rgb(255, 205, 86)']
-                }]
+    currentIssueStatus: {
+      data: {
+        labels: ['New', 'Assigned', 'Fixed', 'Resolved', 'Closed', 'Reopened'],
+        datasets: [
+          {
+            data: statusData.value,
+            backgroundColor: ['rgb(255, 99, 132)', 'rgb(255, 159, 64)', 'rgb(54, 162, 235)', 'rgb(75, 192, 192)', 'rgb(201, 203, 207)', 'rgb(255, 205, 86)']
           }
-          ,
-          options: {
-            responsive: false,
-            plugins:
-                {
-                  title: {
-                    display: true,
-                    text:
-                        'Current Issue Status'
-                  }
-                }
+        ]
+      },
+      options: {
+        responsive: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Current Issue Status'
           }
         }
-    ,
+      }
+    },
 
     currentIssuePriority: {
       data: {
         labels: ['Blocker', 'Critical', 'Major', 'Minor', 'Trivial'],
-        datasets:
-            [{
-              data: priorityData.value,
-              backgroundColor: ['rgb(255, 99, 132)', 'rgb(255, 159, 64)', 'rgb(255, 205, 86)', 'rgb(75, 192, 192)', 'rgb(54, 162, 235)']
-            }]
-      }
-      ,
+        datasets: [
+          {
+            data: priorityData.value,
+            backgroundColor: ['rgb(255, 99, 132)', 'rgb(255, 159, 64)', 'rgb(255, 205, 86)', 'rgb(75, 192, 192)', 'rgb(54, 162, 235)']
+          }
+        ]
+      },
       options: {
         responsive: false,
-        plugins:
-            {
-              title: {
-                display: true,
-                text:
-                    'Current Issue Priority'
-              }
-            }
+        plugins: {
+          title: {
+            display: true,
+            text: 'Current Issue Priority'
+          }
+        }
       }
     }
   }

@@ -68,7 +68,7 @@
                 <li v-for="(userRole, index) in ['Admin', 'Project_Lead', 'Developer', 'Tester']" :key="index">
                   <div class="flex items-center p-2 rounded hover:bg-gray-100">
                     <input :id="`userRole-` + userRole" type="checkbox" :value="userRole.toUpperCase()"
-                           class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-0" v-model="addUserForm.userRoles">
+                           class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-0" v-model="userRoles">
                     <label :for="`userRole-` + userRole"
                            class="w-full ms-2 text-sm font-medium text-gray-900 rounded">{{ userRole }}</label>
                   </div>
@@ -91,9 +91,9 @@
               <ul class="max-h-48 overflow-y-auto py-3 px-0.5 text-sm text-gray-700 " aria-labelledby="dropdownRadioButton">
                 <li v-for="(user, index) in searchedUserList" :key="index">
                   <div class="flex items-center p-1 py-2 rounded hover:bg-gray-100">
-                    <input :id="`assignee-${user.username}`" type="radio" :value="user.username" name="default-radio" v-model="addUserForm.username"
+                    <input :id="`user-${user.username}`" type="radio" :value="user.username" name="default-radio" v-model="addUserForm.username"
                            class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300" required>
-                    <label :for="`assignee-${user.username}`"
+                    <label :for="`user-${user.username}`"
                            class="w-full ms-2 text-sm font-medium text-gray-900 rounded">{{ user.username }}</label>
                   </div>
                 </li>
@@ -122,8 +122,9 @@ const route = useRoute()
 
 const addUserForm = {
   "username": "",
-  "userRoles": [],
 }
+
+const userRoles = ref([])
 
 const userList = ref([
   {
@@ -140,6 +141,7 @@ onMounted(() => {
   initFlowbite();
   getUsers()
 })
+
 
 function searchUsers(event) {
   const keyword = event.target.value
@@ -164,19 +166,19 @@ function getUsers() {
 }
 
 function addUser() {
-  if (addUserForm.userRoles.length < 1) {
+  if (userRoles.value.length < 1) {
     alert('User roles must be selected')
     return
   }
 
   axios.post('/api/projects/' + route.params.project_id + '/users', {
     "username": addUserForm.username,
-    "userRoles": addUserForm.userRoles,
+    "userRoles": userRoles.value,
   })
       .then(response => {
         console.log(response.data)
         addUserForm.username = ""
-        addUserForm.userRoles = []
+        userRoles.value = []
         location.reload()
       }).catch(error => {
     console.log(error)
