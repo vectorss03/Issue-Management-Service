@@ -1,4 +1,4 @@
-# issue-management-system
+# Issue-Management-Service-Frontend-Vue.js
 
 ## Project setup
 ```
