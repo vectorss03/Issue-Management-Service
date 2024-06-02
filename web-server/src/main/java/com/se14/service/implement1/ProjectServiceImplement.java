@@ -13,14 +13,14 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-@Service
+
 public class ProjectServiceImplement implements ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
 
     public ProjectServiceImplement(ProjectRepository projectRepo, UserRepository userRepo) {
-        this.projectRepository = DBInitializer.DatabaseObjects.getInstance().getProjectDB();
-        this.userRepository = DBInitializer.DatabaseObjects.getInstance().getUserDB();
+        this.projectRepository = projectRepo;
+        this.userRepository = userRepo;
         // 필요한 필드를 여기에 초기화
         // 예: this.anotherRepo = anotherRepo;
     }

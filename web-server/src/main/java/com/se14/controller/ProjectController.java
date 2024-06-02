@@ -80,11 +80,13 @@ public class ProjectController {
         searchCriteria.setTitle(filter.getKeyword());
         if (filter.getStatus() != null && !filter.getStatus().isEmpty()) searchCriteria.setStatus(IssueStatus.valueOf(filter.getStatus()));
         if (filter.getPriority() != null && !filter.getPriority().isEmpty()) searchCriteria.setPriority(IssuePriority.valueOf(filter.getPriority()));
-        searchCriteria.setAssignee(userService.findByUsername(filter.getAssignee()));
-        searchCriteria.setFixer(userService.findByUsername(filter.getFixer()));
-        searchCriteria.setReporter(userService.findByUsername(filter.getReporter()));
+        searchCriteria.setAssignee(filter.getAssignee());
+        searchCriteria.setFixer(filter.getFixer());
+        searchCriteria.setReporter(filter.getReporter());
 
-        return new ResponseEntity<>(issueService.searchIssues(project, searchCriteria).stream().map(IssueDTO::new).toList(), HttpStatus.OK);
+        List<Issue> issues = issueService.searchIssues(project, searchCriteria);
+
+        return new ResponseEntity<>(issues.stream().map(IssueDTO::new).toList(), HttpStatus.OK);
     }
 
     @PostMapping("/{projectId}/issues")

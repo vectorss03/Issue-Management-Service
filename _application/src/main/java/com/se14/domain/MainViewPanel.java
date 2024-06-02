@@ -5,5 +5,5 @@ public enum MainViewPanel {
     PROJECT,
     ISSUE,
     ISSUE_DETAIL,
-    ANALYSIS
+    ANALYSIS,
 }

@@ -36,7 +36,7 @@ public class ProjectServiceImplementTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+//        MockitoAnnotations.openMocks(this);
         projects = new ArrayList<>();
         users = new ArrayList<>();
 

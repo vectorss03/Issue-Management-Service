@@ -20,6 +20,9 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.25.3'
 
     compileOnly 'org.projectlombok:lombok:1.18.32'
+
+    implementation 'org.jfree:jfreechart:1.5.4'
+
 }
 
 test {

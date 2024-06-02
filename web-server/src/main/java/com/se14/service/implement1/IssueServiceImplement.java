@@ -13,16 +13,16 @@ import java.util.List;
 import java.util.Date;
 import java.util.stream.Collectors;
 
-@Service
+
 public class IssueServiceImplement implements IssueService{
     private final IssueRepository issueRepository;
     private final ProjectRepository projectRepository;
     private final CommentRepository commentRepository;
 
     public IssueServiceImplement(IssueRepository issueRepository, ProjectRepository projectRepository, CommentRepository commentRepository) {
-        this.issueRepository = DBInitializer.DatabaseObjects.getInstance().getIssueDB();
-        this.projectRepository = DBInitializer.DatabaseObjects.getInstance().getProjectDB();
-        this.commentRepository = DBInitializer.DatabaseObjects.getInstance().getCommentDB();
+        this.issueRepository = issueRepository;
+        this.projectRepository = projectRepository;
+        this.commentRepository = commentRepository;
     }
     @Override
     public void reportIssue(Project project, User reporter, String title, String description, IssuePriority priority) {
@@ -46,6 +46,16 @@ public class IssueServiceImplement implements IssueService{
             return issues;
         }
 
+        if (criteria.getAssignee() != null && criteria.getAssignee().equals("Unassigned")) {
+            issues = issues.stream().filter(issue -> issue.getAssignee() == null).toList();
+            criteria.setAssignee(null);
+        }
+
+        if (criteria.getFixer() != null && criteria.getFixer().equals("Unassigned")) {
+            issues = issues.stream().filter(issue -> issue.getFixer() == null).toList();
+            criteria.setFixer(null);
+        }
+
         return issues.stream()
                 .filter(issue -> criteria.getTitle() == null || issue.getTitle().toLowerCase().contains(criteria.getTitle().toLowerCase()))
                 .filter(issue -> criteria.getDescription() == null || issue.getDescription().toLowerCase().contains(criteria.getDescription().toLowerCase()))
@@ -53,9 +63,9 @@ public class IssueServiceImplement implements IssueService{
                 .filter(issue -> criteria.getPriority() == null || issue.getPriority().equals(criteria.getPriority()))
                 .filter(issue -> (criteria.getStartDate() == null || !issue.getReportedDate().before(criteria.getStartDate()))
                         && (criteria.getEndDate() == null || !issue.getReportedDate().after(criteria.getEndDate())))
-                .filter(issue -> criteria.getReporter() == null || issue.getReporter().getUserId().equals(criteria.getReporter().getUserId()))
-                .filter(issue -> criteria.getFixer() == null || (issue.getFixer() != null && issue.getFixer().getUserId().equals(criteria.getFixer().getUserId())))
-                .filter(issue -> criteria.getAssignee() == null || (issue.getAssignee() != null && issue.getAssignee().getUserId().equals(criteria.getAssignee().getUserId())))
+                .filter(issue -> criteria.getReporter() == null || criteria.getReporter().isEmpty() || issue.getReporter().getUsername().equals(criteria.getReporter()))
+                .filter(issue -> criteria.getFixer() == null || criteria.getFixer().isEmpty() || (issue.getFixer() != null && issue.getFixer().getUsername().equals(criteria.getFixer())))
+                .filter(issue -> criteria.getAssignee() == null || criteria.getAssignee().isEmpty() || (issue.getAssignee() != null && issue.getAssignee().getUsername().equals(criteria.getAssignee())))
                 .collect(Collectors.toList());
     }
 
