@@ -78,7 +78,7 @@ public class AssignDeveloperController {
     public List<UserDTO> getAllUsers() {
         try {
             int projectId = viewController.getSession().getCurrentProject().getProjectId();
-            URI uri = new URIBuilder(APIServer.URL + "/projects/" + projectId + "/users").build();
+            URI uri = new URIBuilder(APIServer.URL + "/projects/" + projectId + "/developers").build();
             System.out.println("GET: " + uri.toString());
             HttpGet getRequest = new HttpGet(uri);
             getRequest.setHeader(HttpHeaders.CONTENT_TYPE, "application/json");

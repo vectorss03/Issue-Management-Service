@@ -98,9 +98,7 @@ public class IssueController {
     public List<UserDTO> getDeveloperRecommend(@PathVariable("projectId") int projectId, @PathVariable("issueId") int issueId) {
         Project currentProject = projectService.findProjectById(projectId);
         Issue detailedIssue = issueService.findIssueById(issueId);
-
-        System.out.println(developerRecommendationService.recommendDeveloper(currentProject, detailedIssue));
-
+        
         return developerRecommendationService.recommendDeveloper(currentProject, detailedIssue).stream().map(UserDTO::new).toList();
     }
 

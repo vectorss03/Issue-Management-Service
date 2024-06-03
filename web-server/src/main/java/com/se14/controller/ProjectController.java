@@ -14,10 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import jakarta.servlet.http.HttpSession;
 
 import com.se14.service.ProjectService;
@@ -117,11 +115,20 @@ public class ProjectController {
     @GetMapping("/{projectId}/users")
     public List<UserDTO> userList(@PathVariable("projectId") int projectId) {
         Project currentProject = projectService.findProjectById(projectId);
-//        UserRole role = (UserRole)params.get("userRole");
 
         return projectService.findUserByProject(currentProject).stream().map(UserDTO::new).toList();
         //프론트 엔드 쪽 수정 필요함
         //프로젝트에 참가한 유저들 반환
+    }
+
+    @GetMapping("/{projectId}/developers")
+    public List<UserDTO> developerList(@PathVariable("projectId") int projectId) {
+        Project currentProject = projectService.findProjectById(projectId);
+
+        Set<User> developers = new HashSet<>(projectService.listUser(currentProject, UserRole.DEVELOPER));
+        developers.addAll(projectService.listUser(currentProject, UserRole.ADMIN));
+        
+        return developers.stream().map(UserDTO::new).toList();
     }
 
     @GetMapping("/{projectId}/users/join")

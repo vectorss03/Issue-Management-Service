@@ -355,7 +355,7 @@ function getComments() {
 }
 
 function getUsers() {
-  axios.get('/api/projects/' + route.params.project_id + '/users')
+  axios.get('/api/projects/' + route.params.project_id + '/developers')
       .then(response => {
         console.log(response.data)
         userList.value = response.data
